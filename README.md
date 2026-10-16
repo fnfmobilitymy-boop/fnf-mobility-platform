@@ -36,3 +36,7 @@ Browser playback uses H.264 fast-start web editions at the original frame rate a
 ## Automatic gallery
 
 The gallery advances one project every 4.5 seconds while visible. Hovering or focusing the stage, dragging, opening the directory, hiding the tab, or enabling reduced motion pauses automatic advancement. Manual controls defer it for at least six seconds. A pause/resume button gives visitors explicit control. All fifteen screenshot files have now been imported from user-uploaded ZIP archives; media/projects/manifest.json records their project mapping and dimensions.
+
+## Title scale
+
+Hero greeting uses larger, white behind-character captions in play-captioned-large-web.mp4. Main section headings, process/service titles and contact headings use a larger responsive type scale, with separate mobile sizes. Desktop and 390px/360px layouts were checked for overflow and runtime errors.
