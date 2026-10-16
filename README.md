@@ -1,6 +1,6 @@
 # Kenny — Freelance Web Designer
 
-Personal portfolio: client website showcase, introduction, services and real contact links. Seven project links supplied by Kenny are shown in the client showcase.
+Personal portfolio: client website showcase, introduction, services and real contact links. Fifteen project links supplied by Kenny are shown in the client showcase.
 
 The Hero uses the second uploaded original film, synchronized behind-character captions, and returns to its first frame after playing. The original character’s eyes and head respond with small local 2D movements while the body stays fixed. A transparent fluid simulation follows the mouse throughout the site.
 
@@ -23,3 +23,5 @@ All eight layouts share one smooth scroll clock. Chapter text enters and exits r
 Soundtrack: user-uploaded Daylight 日光 MP3, hosted as an unchanged original. SOUND ON starts native background audio without a visible player or third-party requests. It persists across chapters, pauses/resumes without resetting, loops at the end and pauses in hidden tabs. Web Audio gain smoothly lowers from 24% to 5.5% during audible visible character films. Real MP3 decoding, nonzero audio signal, looping and controls passed 14 browser checks.
 
 Seven live project links: BloomThis, Richman Transport, Flower Empire, Infinity Asia Travel & Tours, Richman Car Rental, James Clear and PGH. Cards and visit buttons open the exact supplied URLs in new tabs. Real screenshots could not be retrieved because cloud egress blocks these domains; current covers are explicitly typographic project entry cards. Roles, dates, results and technology stacks are not inferred. Desktop/mobile layout and links passed 30 browser checks.
+
+Added Alpro Pharmacy, Legendary Car Rental, Prestige Global, TNT Design, Restoran Green View, Hamburger America, Prince Court and London Medical, bringing the showcase to 15 supplied websites. Updated Chinese/English introduction, services, process, identity, contact and guide copy around Kenny’s stated 2 years of website design experience. Dates, delivery roles, commercial results, awards and prices are not invented. The site title and description are localized with the same positioning. 46 project checks and 44 bilingual copy/layout checks passed on desktop/mobile.
