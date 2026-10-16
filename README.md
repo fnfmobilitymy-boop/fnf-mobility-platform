@@ -28,3 +28,7 @@ The inquiry form saves/downloads only a local draft. Its WhatsApp action opens t
 The gallery passed 46 browser interaction checks, 9 runtime checks and 28 full-site scroll checks. Viewports include desktop, the reference video’s 992×586 size, and mobile. Verified actual curved renders, mid-drag frames, wrap, keyboard, touch, native vertical scrolling, all project links, fallback/reduced motion, idle/offscreen rendering, uninterrupted music and accurate navigation after opening/closing the directory. Build and static export passed. Software-rendered cloud stress tests from the previous audit still showed video frame drops; no universal 60fps promise is made.
 
 Published as a static GitHub Pages site from the gh-pages branch root. Reference recordings and source secrets are not included.
+
+## Loading optimization
+
+Browser playback uses H.264 fast-start web editions at the original frame rate and duration, with AAC audio. Source films remain in media. WebP posters reduce initial image transfer. Background videos attach their source within 160px of the viewport and preload metadata; pointer fluid uses a smaller simulation grid and fewer pressure iterations.
