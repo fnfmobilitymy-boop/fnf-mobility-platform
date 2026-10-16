@@ -6,7 +6,7 @@ Kenny’s personal portfolio, with his stated two years of website design experi
 
 Projects now appear on a curved horizontal WebGL ribbon based on the user’s uploaded visual reference. Subdivided cards bend along a cylindrical arc and respond to movement speed. Dragging has eased movement and release snapping, with infinite wrap, previous/next controls, keyboard arrows/Home/End, selection dots, and an expandable directory containing all fifteen original URLs. Touch preserves native vertical page scrolling. Reduced motion uses immediate, flat selections; a native card fallback works without WebGL. Idle and offscreen galleries stop repainting. Textures are cached with a bounded cache and renderer density is capped.
 
-Current covers are project-name/domain designs. Real website screenshots have not been supplied and cloud egress blocked retrieving the external sites. No client delivery role, date, outcome or screenshot is invented. Existing cover fields can replace the text cards with actual website images.
+All fifteen covers use the user-supplied website screenshots, imported from individually named ZIP files. They are served locally as WebP images (about 1.16 MB for all fifteen), loaded into the bounded gallery texture cache on demand. The native fallback displays the same images. No client delivery role, date or outcome is invented.
 
 ## Media and interaction
 
@@ -35,4 +35,4 @@ Browser playback uses H.264 fast-start web editions at the original frame rate a
 
 ## Automatic gallery
 
-The gallery advances one project every 4.5 seconds while visible. Hovering or focusing the stage, dragging, opening the directory, hiding the tab, or enabling reduced motion pauses automatic advancement. Manual controls defer it for at least six seconds. A pause/resume button gives visitors explicit control. Real screenshot files are still pending import; inline chat images are not available as workspace assets.
+The gallery advances one project every 4.5 seconds while visible. Hovering or focusing the stage, dragging, opening the directory, hiding the tab, or enabling reduced motion pauses automatic advancement. Manual controls defer it for at least six seconds. A pause/resume button gives visitors explicit control. All fifteen screenshot files have now been imported from user-uploaded ZIP archives; media/projects/manifest.json records their project mapping and dimensions.
