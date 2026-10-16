@@ -9,3 +9,5 @@ Original movies preserve their bytes, dimensions, ratio and playback speed. The 
 GitHub Pages source: gh-pages branch, /(root).
 
 Films now form full-viewport chapters with synchronized blurred fill and uncropped foreground footage. Every film plays once and settles at its first frame. There are no replay or restart controls.
+
+The directory, client showcase and identity stage now use full-viewport layouts, edge-to-edge media and enlarged typography. Chapter navigation aligns to the viewport edge.
