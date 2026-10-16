@@ -19,3 +19,5 @@ The ID card drops into view, rebounds and settles when entering its stage. It di
 Head/eye response uses the existing first-frame image for the global guide, ID card and resting video characters; it is a small 2D effect, not a live 3D rig. Playing movies keep their original recorded actions.
 
 All eight layouts share one smooth scroll clock. Chapter text enters and exits reversibly with scroll position, while video backgrounds use slight parallax. Both navigation and wheel scrolling use this flow. Dialogs pause background movement; touch keeps native scrolling and reduced-motion settings restore static content.
+
+User-selected soundtrack: https://www.youtube.com/watch?v=CJlrpnBeC9A . Uses the visible official YouTube iframe player, loaded only after SOUND ON. The player persists across chapters, pauses with SOUND OFF or a hidden tab, and reduces volume during audible visible character films. No audio was extracted or hosted. Cloud egress blocks YouTube, so real remote availability and embedding permission could not be confirmed; failure and autoplay-blocked states provide guidance and the original link.
