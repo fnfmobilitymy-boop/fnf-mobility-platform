@@ -7,3 +7,5 @@ The Hero uses the second uploaded original film, synchronized behind-character c
 Original movies preserve their bytes, dimensions, ratio and playback speed. The extra grayscale video is a derived segmentation mask, not a replacement movie. Contact drafts stay local and are not sent; email, WhatsApp and Telegram links open the actual contact channels.
 
 GitHub Pages source: gh-pages branch, /(root).
+
+Films now form full-viewport chapters with synchronized blurred fill and uncropped foreground footage. Every film plays once and settles at its first frame. There are no replay or restart controls.
