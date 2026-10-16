@@ -17,3 +17,5 @@ Bidirectional scrolling preloads nearby films, retains playheads offscreen, fade
 The ID card drops into view, rebounds and settles when entering its stage. It displays the updated public contact details: WhatsApp +6011-6773 5644, kenny09@gmail.com, Telegram @Kennystudio. The adjacent contact links, contact chapter and inquiry dialog all use these details.
 
 Head/eye response uses the existing first-frame image for the global guide, ID card and resting video characters; it is a small 2D effect, not a live 3D rig. Playing movies keep their original recorded actions.
+
+All eight layouts share one smooth scroll clock. Chapter text enters and exits reversibly with scroll position, while video backgrounds use slight parallax. Both navigation and wheel scrolling use this flow. Dialogs pause background movement; touch keeps native scrolling and reduced-motion settings restore static content.
