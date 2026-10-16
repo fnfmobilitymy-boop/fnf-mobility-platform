@@ -32,3 +32,7 @@ Published as a static GitHub Pages site from the gh-pages branch root. Reference
 ## Loading optimization
 
 Browser playback uses H.264 fast-start web editions at the original frame rate and duration, with AAC audio. Source films remain in media. WebP posters reduce initial image transfer. Background videos attach their source within 160px of the viewport and preload metadata; pointer fluid uses a smaller simulation grid and fewer pressure iterations.
+
+## Automatic gallery
+
+The gallery advances one project every 4.5 seconds while visible. Hovering or focusing the stage, dragging, opening the directory, hiding the tab, or enabling reduced motion pauses automatic advancement. Manual controls defer it for at least six seconds. A pause/resume button gives visitors explicit control. Real screenshot files are still pending import; inline chat images are not available as workspace assets.
