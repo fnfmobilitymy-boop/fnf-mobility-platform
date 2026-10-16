@@ -18,7 +18,7 @@ The user-uploaded Daylight 日光 MP3 loads on SOUND ON, persists through chapte
 
 - WhatsApp: https://wa.me/message/DHXOYXRCJIKZK1
 - Telegram: https://t.me/KennyStudio
-- Email: kenny09@gmail.com
+- Email: kennystudio09@gmail.com
 - Display phone: +6011-6773 5644
 
 The inquiry form saves/downloads only a local draft. Its WhatsApp action opens the original phone number with the filled brief for the visitor to review and send. No server sends messages. The guide is local and rule-based, not an online AI.
