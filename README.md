@@ -10,7 +10,7 @@ All fifteen covers use the user-supplied website screenshots, imported from indi
 
 ## Media and interaction
 
-Original character movies retain their source bytes, dimensions and normal speed. The Hero uses the second uploaded movie and behind-character HI! / I’M KENNY captions composited into its fast-start web video using the derived segmentation mask. Films return to the original first frame when finished and play again after leaving and revisiting. Mouse response in resting characters is a localized 2D head/eye effect, not a rigged 3D avatar. The hanging ID drops into view and displays Kenny’s public contact details. A violet/cyan fluid trail follows fine mouse pointers; touch and reduced motion disable it.
+Original character movies retain their source bytes, dimensions and normal speed. The Hero uses the second uploaded movie and behind-character HI! / I’M KENNY captions composited into its fast-start web video using the derived segmentation mask. Films return to the original first frame when finished and play again after leaving and revisiting. Mouse response in resting characters is a localized 2D head/eye effect, not a rigged 3D avatar. The hanging ID drops into view and displays Kenny’s public contact details. A violet/cyan fluid trail follows fine mouse pointers; touch uses a lower-resolution simulation capped near 30fps, while reduced motion disables it.
 
 The user-uploaded Daylight 日光 MP3 defaults to SOUND ON, retries after a visitor gesture if browser autoplay is blocked, remembers explicit mute in local storage, persists through chapter/gallery interaction, pauses/resumes without resetting, loops, and ducks during visible audible character films. Only the active chapter is audible. No YouTube player or script remains. Original audio is unchanged.
 
@@ -46,3 +46,5 @@ Hero greeting uses larger, white behind-character captions in play-captioned-lar
 Static English Open Graph and Twitter metadata advertise Kenny Studio and a 1200×630 JPEG screenshot of the English homepage. The on-page Chinese/English switch remains available. Social apps may cache earlier link previews.
 
 Link-preview language is fixed to English in both initial HTML and runtime title/description. First-time page visits also default to English; visitors can still switch page content to Chinese. This does not invalidate social platforms’ previously cached cards.
+
+Mobile fluid follows passive single-touch movement without intercepting native page scrolling. Touch cancellation leaves the trail to fade; multiple touches do not paint. Tested with browser touch input, idle cleanup, reduced motion, and desktop mouse regression.
