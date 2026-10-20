@@ -1,0 +1,3 @@
+Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+
+http://scripts.sil.org/OFL

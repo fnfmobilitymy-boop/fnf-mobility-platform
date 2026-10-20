@@ -1,0 +1,72 @@
+[
+  {
+    "id": "hero",
+    "variant": "desktop",
+    "count": 241,
+    "width": 960,
+    "source": "play-captioned-large-web.mp4"
+  },
+  {
+    "id": "hero",
+    "variant": "mobile",
+    "count": 241,
+    "width": 480,
+    "source": "play-captioned-large-web.mp4"
+  },
+  {
+    "id": "about",
+    "variant": "desktop",
+    "count": 241,
+    "width": 960,
+    "source": "work-web.mp4"
+  },
+  {
+    "id": "about",
+    "variant": "mobile",
+    "count": 241,
+    "width": 480,
+    "source": "work-web.mp4"
+  },
+  {
+    "id": "process",
+    "variant": "desktop",
+    "count": 241,
+    "width": 960,
+    "source": "move-web.mp4"
+  },
+  {
+    "id": "process",
+    "variant": "mobile",
+    "count": 241,
+    "width": 480,
+    "source": "move-web.mp4"
+  },
+  {
+    "id": "services",
+    "variant": "desktop",
+    "count": 241,
+    "width": 960,
+    "source": "slow-web.mp4"
+  },
+  {
+    "id": "services",
+    "variant": "mobile",
+    "count": 241,
+    "width": 480,
+    "source": "slow-web.mp4"
+  },
+  {
+    "id": "contact",
+    "variant": "desktop",
+    "count": 241,
+    "width": 960,
+    "source": "hello-web.mp4"
+  },
+  {
+    "id": "contact",
+    "variant": "mobile",
+    "count": 241,
+    "width": 480,
+    "source": "hello-web.mp4"
+  }
+]
