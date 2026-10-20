@@ -1,63 +1,56 @@
-# Kenny Studio — native scroll portfolio
+# Kenny — Professional Web Designer
 
-A static, framework-free HTML/CSS/JavaScript website for Kenny Studio, served from the root of `gh-pages` at https://kennystudio.space/.
+Kenny’s personal portfolio, with his stated two years of website design experience, Chinese/English copy, fifteen user-supplied website projects and real contact links.
 
-## Run locally
+## Project gallery
 
-Place `index.html` beside the complete `frames/` directory, then run:
+Projects now appear on a curved horizontal WebGL ribbon based on the user’s uploaded visual reference. Subdivided cards bend along a cylindrical arc and respond to movement speed. Dragging has eased movement and release snapping, with infinite wrap, previous/next controls, keyboard arrows/Home/End, selection dots, and an expandable directory containing all fifteen original URLs. Touch preserves native vertical page scrolling. Reduced motion uses immediate, flat selections; a native card fallback works without WebGL. Idle and offscreen galleries stop repainting. Textures are cached with a bounded cache and renderer density is capped.
 
-```sh
-python3 -m http.server 8123
-```
+All fifteen covers use the user-supplied website screenshots, imported from individually named ZIP files. They are served locally as WebP images (about 1.16 MB for all fifteen), loaded into the bounded gallery texture cache on demand. The native fallback displays the same images. No client delivery role, date or outcome is invented.
 
-Open http://localhost:8123/. No npm install or build step is required to run the supplied site.
+## Media and interaction
 
-## Scroll-controlled backgrounds
+Original character movies retain their source bytes, dimensions and normal speed. The Hero uses the second uploaded movie and behind-character HI! / I’M KENNY captions composited into its fast-start web video using the derived segmentation mask. Films return to the original first frame when finished and play again after leaving and revisiting. Mouse response in resting characters is a localized 2D head/eye effect, not a rigged 3D avatar. The hanging ID drops into view and displays Kenny’s public contact details. A violet/cyan fluid trail follows fine mouse pointers; touch uses a lower-resolution simulation capped near 30fps, while reduced motion disables it.
 
-Five original character scenes run from pre-extracted WebP frame sequences on a fixed, fullscreen Canvas. The page does not use background video elements or `video.currentTime` seeking. Scroll down advances frames and scroll up reverses them. Frame movement has damping and a speed limit; the copy fades and moves in the scroll direction near each node’s end. Each node holds until two additional deliberate scroll gestures; mouse wheels and touch gestures are supported. Fixed navigation can jump directly to a node’s readable state. Home and contact CTA buttons have a repeating subtle animation.
+The user-uploaded Daylight 日光 MP3 defaults to SOUND ON, retries after a visitor gesture if browser autoplay is blocked, remembers explicit mute in local storage, persists through chapter/gallery interaction, pauses/resumes without resetting, loops, and ducks during visible audible character films. Only the active chapter is audible. No YouTube player or script remains. Original audio is unchanged.
 
-The five-node order is Hero/game room → creative desk → exercise/process → everyday life/services → final greeting/contact. The Hero sequence includes the large, behind-character HI! / I’M KENNY captions.
+## Contact
 
-`CONFIG` near the beginning of the application script in `index.html` centralizes the frame rate, scroll distance, damping, maximum frame speed, text fade range/duration, hold-gesture count, cache sizes and gallery timing. Defaults include 24 source frames per second, a maximum of 72 displayed sequence frames per second, and two end-hold gestures. Reduced motion shows static end frames and disables automatic animation.
-
-The supplied sequences contain 241 frames each, in separate desktop (828px; preserved caption frames may be 960px) and mobile (480px) sizes. Frames are loaded around the current playhead with bounded decoded-image caches; the entire frame set is not preloaded. The scroll playhead advances independently of downloads; slow connections show the nearest decoded frame without locking page scrolling. Rendering is capped at 30 canvas paints per second and stops when the frame and text opacity settle, including at intermediate positions. Decoded images are cached within a fixed limit, and stale scene requests are dropped. Sequences are extracted from the original movies rather than upscaled from the smaller streaming encodes; the existing behind-character Hero caption frames remain. Desktop uses a single sharp character image without an enlarged, low-resolution duplicate. Canvas and globe work pause offscreen or when the page is hidden.
-
-### Rebuild frame assets
-
-The original high-resolution movies and optimized captioned movie remain in `media/`. `build-frames.sh` regenerates the supplied sequences with FFmpeg. For example:
-
-```sh
-mkdir -p frames/about/desktop
-ffmpeg -y -i media/work.mp4 -an \
-  -vf "fps=24,scale=828:-2" -c:v libwebp -q:v 72 -compression_level 2 \
-  frames/about/desktop/frame_%04d.webp
-```
-
-For mobile, use `scale=480:-2` and `frames/about/mobile/`. If changing fps/duration or file counts, update the corresponding `CONFIG` values and frame manifest.
-
-## Website features
-
-- A global language menu switches English, Chinese and Bahasa Melayu across navigation, story copy, services, gallery controls, globe controls and the inquiry form. The selected language is remembered. English share metadata remains English even when the site language changes.
-- Fifteen user-supplied website screenshots appear in a curved WebGL gallery, with a CSS card fallback, automatic advance, hover/focus pause, drag/touch, keyboard and previous/next controls. All original website URLs remain.
-- Ten service categories cover landing pages, personal brands, business websites, e-commerce, bookings, CMS/admin dashboards, custom systems, backend integrations, redesign and SEO/maintenance.
-- A reference-inspired starfield and dotted globe rotates automatically. The searchable/filterable directory contains 250 countries and regions, including small territories, with selection/centering, mouse/touch rotation, zoom, reset, keyboard controls and reduced-motion support. Collaboration is described as remote availability; no offices or client history are invented.
-- The project brief requires name, project type and a description. Company, budget and six features are optional. It prepares a localized, reviewable summary and a WhatsApp link. No site server sends or stores form entries. Values survive a language switch in memory and clear on reload.
-- A 96 kbps music asset reduces the background audio download from 7.6 MB to 2.3 MB. Daylight background music defaults on and loops, retries after a user gesture when autoplay is blocked, and remembers manual mute. Native browser autoplay rules still apply.
-- Purple/cyan fluid follows mouse and touch movement without blocking ordinary page scrolling. Mobile uses a smaller simulation; reduced motion disables the effect.
-
-## Contact and previews
-
-- Email: kennystudio09@gmail.com
 - WhatsApp: https://wa.me/message/DHXOYXRCJIKZK1
-- WhatsApp project summary recipient: +6011-6773 5644
 - Telegram: https://t.me/KennyStudio
+- Email: kennystudio09@gmail.com
+- Display phone: +6011-6773 5644
 
-Static English Open Graph/Twitter tags and an English homepage cover are included. Social applications may retain older preview caches; deployment alone does not force their cache refresh.
+The inquiry form saves/downloads only a local draft. Its WhatsApp action opens the original phone number with the filled brief for the visitor to review and send. No server sends messages. The guide is local and rule-based, not an online AI.
 
-## Verification
+## Validation and delivery
 
-Checked forward/reverse sequences, frame-speed limits, five-node navigation, two-gesture holds on wheel and real browser touch input, late text visibility, desktop/390px/360px layouts, mobile-only frame loading, three-language switching, preserved form data during language switches, correct WhatsApp recipient and encoding, no entries after reload, gallery controls/curved rendering, all 250 country/region selections, globe centering/drag/zoom/keyboard/offscreen behavior, music autoplay/gesture recovery/mute persistence, and reduced motion. No background video elements or runtime errors were found in these checks. Real-device performance depends on the device and connection.
+The gallery passed 46 browser interaction checks, 9 runtime checks and 28 full-site scroll checks. Viewports include desktop, the reference video’s 992×586 size, and mobile. Verified actual curved renders, mid-drag frames, wrap, keyboard, touch, native vertical scrolling, all project links, fallback/reduced motion, idle/offscreen rendering, uninterrupted music and accurate navigation after opening/closing the directory. Build and static export passed. Software-rendered cloud stress tests from the previous audit still showed video frame drops; no universal 60fps promise is made.
 
-Map geometry: Natural Earth (public domain), distributed via world-atlas. Country/region data: world-countries; adapted data in `frames/globe/countries.json` is available under ODbL. Attribution and dependency notices are included in `frames/globe/` and font notices in `frames/fonts/`.
+Published as a static GitHub Pages site from the gh-pages branch root. Reference recordings and source secrets are not included.
 
-Performance regression checks: intermediate-opacity idle has zero story redraws; stalled frame requests do not block the two-gesture exit. Mobile scroll checked with a 4× CPU throttle and 1.6 Mbps / 150 ms network conditions. These are browser simulations, not a guarantee for every physical device.
+## Loading optimization
+
+Browser playback uses H.264 fast-start web editions at the original frame rate and duration, with AAC audio. Source films remain in media. WebP posters reduce initial image transfer. Background videos attach their source within 160px of the viewport and preload metadata; pointer fluid uses a smaller simulation grid and fewer pressure iterations.
+
+## Automatic gallery
+
+The gallery advances one project every 4.5 seconds while visible. Hovering or focusing the stage, dragging, opening the directory, hiding the tab, or enabling reduced motion pauses automatic advancement. Manual controls defer it for at least six seconds. A pause/resume button gives visitors explicit control. All fifteen screenshot files have now been imported from user-uploaded ZIP archives; media/projects/manifest.json records their project mapping and dimensions.
+
+## Title scale
+
+Hero greeting uses larger, white behind-character captions in play-captioned-large-web.mp4. Main section headings, process/service titles and contact headings use a larger responsive type scale, with separate mobile sizes. Desktop and 390px/360px layouts were checked for overflow and runtime errors.
+
+## Link previews
+
+Static English Open Graph and Twitter metadata advertise Kenny Studio and a 1200×630 JPEG screenshot of the English homepage. The on-page Chinese/English switch remains available. Social apps may cache earlier link previews.
+
+Link-preview language is fixed to English in both initial HTML and runtime title/description. First-time page visits also default to English; visitors can still switch page content to Chinese. This does not invalidate social platforms’ previously cached cards.
+
+Mobile fluid follows passive single-touch movement without intercepting native page scrolling. Touch cancellation leaves the trail to fade; multiple touches do not paint. Tested with browser touch input, idle cleanup, reduced motion, and desktop mouse regression.
+
+## Services and project enquiries
+
+Ten service categories cover landing pages, personal brands, business websites, e-commerce, bookings, CMS/admin dashboards, custom systems, backend integrations, redesign, and SEO/maintenance. The new #project-brief section supports English, Chinese and Bahasa Melayu. Name, project type and project description are required; budget, business and six feature choices are optional. It generates a reviewable summary and a WhatsApp link to the existing contact number. Entries are not saved or sent by the site. The contact section’s planning button opens this form.
+
+Validated required fields, all project type choices, recipient number, message encoding and feature/budget content, stale-preview clearing, language changes, blank entries after reload, and desktop/390px/360px layouts. Existing social metadata, music and gallery remain intact.
