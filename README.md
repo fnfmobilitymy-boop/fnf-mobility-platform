@@ -48,3 +48,9 @@ Static English Open Graph and Twitter metadata advertise Kenny Studio and a 1200
 Link-preview language is fixed to English in both initial HTML and runtime title/description. First-time page visits also default to English; visitors can still switch page content to Chinese. This does not invalidate social platforms’ previously cached cards.
 
 Mobile fluid follows passive single-touch movement without intercepting native page scrolling. Touch cancellation leaves the trail to fade; multiple touches do not paint. Tested with browser touch input, idle cleanup, reduced motion, and desktop mouse regression.
+
+## Services and project enquiries
+
+Ten service categories cover landing pages, personal brands, business websites, e-commerce, bookings, CMS/admin dashboards, custom systems, backend integrations, redesign, and SEO/maintenance. The new #project-brief section supports English, Chinese and Bahasa Melayu. Name, project type and project description are required; budget, business and six feature choices are optional. It generates a reviewable summary and a WhatsApp link to the existing contact number. Entries are not saved or sent by the site. The contact section’s planning button opens this form.
+
+Validated required fields, all project type choices, recipient number, message encoding and feature/budget content, stale-preview clearing, language changes, blank entries after reload, and desktop/390px/360px layouts. Existing social metadata, music and gallery remain intact.
