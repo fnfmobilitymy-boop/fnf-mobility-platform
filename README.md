@@ -1,6 +1,6 @@
 # Kenny — Professional Web Designer
 
-Kenny’s personal portfolio, with his stated two years of website design experience, Chinese/English copy, fifteen user-supplied website projects and real contact links.
+Kenny’s personal portfolio, with his stated two years of website design experience, English/Chinese/Bahasa Melayu copy, fifteen user-supplied website projects and real contact links.
 
 ## Project gallery
 
@@ -43,9 +43,9 @@ Hero greeting uses larger, white behind-character captions in play-captioned-lar
 
 ## Link previews
 
-Static English Open Graph and Twitter metadata advertise Kenny Studio and a 1200×630 JPEG screenshot of the English homepage. The on-page Chinese/English switch remains available. Social apps may cache earlier link previews.
+Static English Open Graph and Twitter metadata advertise Kenny Studio and a 1200×630 JPEG screenshot of the English homepage. The global English/Chinese/Bahasa Melayu menu remains available. Social apps may cache earlier link previews.
 
-Link-preview language is fixed to English in both initial HTML and runtime title/description. First-time page visits also default to English; visitors can still switch page content to Chinese. This does not invalidate social platforms’ previously cached cards.
+Link-preview language is fixed to English in both initial HTML and runtime title/description. First-time page visits also default to English; visitors can switch page content to Chinese or Bahasa Melayu. This does not invalidate social platforms’ previously cached cards.
 
 Mobile fluid follows passive single-touch movement without intercepting native page scrolling. Touch cancellation leaves the trail to fade; multiple touches do not paint. Tested with browser touch input, idle cleanup, reduced motion, and desktop mouse regression.
 
@@ -54,3 +54,9 @@ Mobile fluid follows passive single-touch movement without intercepting native p
 Ten service categories cover landing pages, personal brands, business websites, e-commerce, bookings, CMS/admin dashboards, custom systems, backend integrations, redesign, and SEO/maintenance. The new #project-brief section supports English, Chinese and Bahasa Melayu. Name, project type and project description are required; budget, business and six feature choices are optional. It generates a reviewable summary and a WhatsApp link to the existing contact number. Entries are not saved or sent by the site. The contact section’s planning button opens this form.
 
 Validated required fields, all project type choices, recipient number, message encoding and feature/budget content, stale-preview clearing, language changes, blank entries after reload, and desktop/390px/360px layouts. Existing social metadata, music and gallery remain intact.
+
+## Global language menu
+
+The fixed header provides English, 中文 and Bahasa Melayu in one keyboard-accessible menu. Navigation, section headings and copy, the tape directory, website gallery controls, service catalogue, contact copy, character-film controls, local guide and quote form follow the selected language. Brand/project names, contact addresses and the baked Hero greeting remain their original content. The shared language is remembered in localStorage and restored on reload; first visits use English. The form language selector changes the same global preference. Switching languages preserves form entries and clears prepared summaries so the visitor can regenerate them in the new language. User input values are not translated. Video autoplay, scroll behaviour and the gallery renderer retain the restored version’s behaviour.
+
+Validated global switching and remembered language, synchronized form controls, preserved inputs, localized WhatsApp summaries, guide dialogs and no horizontal overflow at 1366px, 390px and 360px. English share metadata remains independent of the page language.
