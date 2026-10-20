@@ -40,3 +40,7 @@ The gallery advances one project every 4.5 seconds while visible. Hovering or fo
 ## Title scale
 
 Hero greeting uses larger, white behind-character captions in play-captioned-large-web.mp4. Main section headings, process/service titles and contact headings use a larger responsive type scale, with separate mobile sizes. Desktop and 390px/360px layouts were checked for overflow and runtime errors.
+
+## Link previews
+
+Static English Open Graph and Twitter metadata advertise Kenny Studio and a 1200×630 JPEG screenshot of the English homepage. The on-page Chinese/English switch remains available. Social apps may cache earlier link previews.
