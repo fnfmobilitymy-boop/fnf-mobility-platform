@@ -44,3 +44,5 @@ Hero greeting uses larger, white behind-character captions in play-captioned-lar
 ## Link previews
 
 Static English Open Graph and Twitter metadata advertise Kenny Studio and a 1200×630 JPEG screenshot of the English homepage. The on-page Chinese/English switch remains available. Social apps may cache earlier link previews.
+
+Link-preview language is fixed to English in both initial HTML and runtime title/description. First-time page visits also default to English; visitors can still switch page content to Chinese. This does not invalidate social platforms’ previously cached cards.
