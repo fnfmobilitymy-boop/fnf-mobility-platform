@@ -16,7 +16,7 @@ If nameservers are **Custom DNS**, records must be checked at the provider named
 
 Only replace conflicting website records after confirming them. Preserve MX, TXT, verification and other unrelated records. The CNAME target contains no `https://` and no repository path.
 
-The repository's root CNAME remains `kennystudio.space`. GitHub Pages must retain the same custom domain; its DNS check should pass after public records resolve. Existing correct records may instead require checking the visitor's DNS resolver/cache. DNS changes are not instantaneous.
+The previous custom-domain binding was `kennystudio.space`. It is temporarily removed at the owner's request so the default GitHub Pages demo can be used. GitHub Pages must retain the same custom domain; its DNS check should pass after public records resolve. Existing correct records may instead require checking the visitor's DNS resolver/cache. DNS changes are not instantaneous.
 
 The English share image is `/kenny-studio-share-20261021.jpg` (JPEG, 1200 × 630). It requires working domain DNS, as does the homepage. Once the domain works, social platforms may need a fresh scrape; an existing post's cached preview is not guaranteed to update automatically.
 

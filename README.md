@@ -70,3 +70,7 @@ The worldwide coverage section is restored to the video-autoplay portfolio, incl
 ## Globe gesture zoom
 
 Desktop wheel/trackpad scrolling over the globe zooms it; wheel events outside the canvas retain ordinary page scrolling. Mobile supports two-finger pinch zoom on the globe, with one-finger horizontal rotation and vertical page scrolling preserved after the gesture. All zoom controls share the same 0.6×–2.4× limits; reset returns to 1×. Gesture handlers do not change browser viewport zoom. English, Chinese and Malay hints describe the appropriate input. Verified actual two-touch browser input in both directions, bounds, subsequent one-finger gestures, wheel scoping, selection and language switching.
+
+## Temporary default-domain demo
+
+At the owner’s request, the custom-domain CNAME has been removed while the Namecheap domain is unavailable. The existing portfolio is served from the default GitHub Pages project URL. This is a temporary noindex demo; canonical metadata is withheld until the official production origin is verified. Share images use the existing public repository asset independently of the unavailable custom domain. SEO/new service work is isolated and has not been published.
