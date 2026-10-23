@@ -1,2 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /source/
+Disallow: /scripts/
+Disallow: /tests/
+Disallow: /docs/
+Disallow: /admin/
+Disallow: /preview/
+Sitemap: https://kennystudio.cfd/sitemap.xml
