@@ -1,0 +1,23 @@
+[
+  {
+    "slug": "bloomthis",
+    "name": "BloomThis",
+    "url": "https://bloomthis.co",
+    "width": 1324,
+    "height": 991
+  },
+  {
+    "slug": "richman-transport",
+    "name": "Richman Transport",
+    "url": "https://richmantransport.com",
+    "width": 1322,
+    "height": 976
+  },
+  {
+    "slug": "london-medical",
+    "name": "London Medical",
+    "url": "https://londonmedical.co.uk/",
+    "width": 1440,
+    "height": 781
+  }
+]

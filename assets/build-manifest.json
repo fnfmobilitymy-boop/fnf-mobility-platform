@@ -1,0 +1,16 @@
+{
+  "indexable": false,
+  "origin": null,
+  "pages": [
+    "/",
+    "/services/",
+    "/services/website-design/",
+    "/services/google-ads-management/",
+    "/services/seo/",
+    "/privacy/"
+  ],
+  "css": "assets/portfolio.0a2b4424a7.css",
+  "app": "assets/portfolio.03209058f1.js",
+  "runtime": "assets/site.8e361b61d8.js",
+  "extra_css": "assets/services.e914321ac1.css"
+}

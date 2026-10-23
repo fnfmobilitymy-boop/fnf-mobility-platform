@@ -51,7 +51,7 @@ Mobile fluid follows passive single-touch movement without intercepting native p
 
 ## Services and project enquiries
 
-Ten service categories cover landing pages, personal brands, business websites, e-commerce, bookings, CMS/admin dashboards, custom systems, backend integrations, redesign, and SEO/maintenance. The new #project-brief section supports English, Chinese and Bahasa Melayu. Name, project type and project description are required; budget, business and six feature choices are optional. It generates a reviewable summary and a WhatsApp link to the existing contact number. Entries are not saved or sent by the site. The contact section’s planning button opens this form.
+Ten original service categories cover landing pages, personal brands, business websites, e-commerce, bookings, CMS/admin dashboards, custom systems, backend integrations, redesign, and SEO/maintenance. The new #project-brief section supports English, Chinese and Bahasa Melayu. Name, project type and project description are required; budget, business and six feature choices are optional. It generates a reviewable summary and a WhatsApp link to the existing contact number. Entries are not saved or sent by the site. The contact section’s planning button opens this form.
 
 Validated required fields, all project type choices, recipient number, message encoding and feature/budget content, stale-preview clearing, language changes, blank entries after reload, and desktop/390px/360px layouts. Existing social metadata, music and gallery remain intact.
 
@@ -74,3 +74,9 @@ Desktop wheel/trackpad scrolling over the globe zooms it; wheel events outside t
 ## Temporary default-domain demo
 
 At the owner’s request, the custom-domain CNAME has been removed while the Namecheap domain is unavailable. The existing portfolio is served from the default GitHub Pages project URL. This is a temporary noindex demo; canonical metadata is withheld until the official production origin is verified. Share images use the existing public repository asset independently of the unavailable custom domain. SEO/new service work is isolated and has not been published.
+
+## SEO and service preview (not published)
+
+The SEO work is isolated on `seo-services-preview-20261023`. See [actual-code audit](docs/seo-audit.md) and [configuration, preview, tests and release instructions](docs/seo-release.md). The existing demo was separately restored to the default GitHub Pages URL at the owner’s request; these SEO changes require approval before publication.
+
+The reproducible static build adds crawlable homepage HTML, services/website-design, services/google-ads-management and services/seo routes, a services overview and factual privacy page. The homepage retains the original ten services and adds two, with corresponding enquiry choices. The default preview is noindex and has no guessed canonical or sitemap; a verified `SITE_URL` and an explicitly enabled indexable build generate production SEO metadata, structured data, robots and sitemap. No real verification or analytics ID has been supplied.

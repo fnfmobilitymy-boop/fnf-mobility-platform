@@ -1,0 +1,2 @@
+# Browser preview/snapshot tests only; the static builder uses the Python standard library.
+playwright>=1.48,<2
