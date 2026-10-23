@@ -10,6 +10,7 @@ with sync_playwright() as p:
   page.add_init_script('localStorage.setItem("kenny-language","en");localStorage.setItem("kenny-music","off");window.__cls=0;new PerformanceObserver(l=>l.getEntries().forEach(e=>{if(!e.hadRecentInput)window.__cls+=e.value})).observe({type:"layout-shift",buffered:true})')
   for path in ['','services/','services/website-design/','services/google-ads-management/','services/seo/','privacy/']:
    r=page.goto(urljoin(BASE,path),wait_until='domcontentloaded');page.wait_for_timeout(700);assert r.status==200
+   if path=='':page.wait_for_selector('#kenny-entry-intro',state='detached')
    assert page.locator('h1').count()==1,(w,path)
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),(w,path)
    assert page.title() and page.locator('meta[name=description]').get_attribute('content')
@@ -29,7 +30,7 @@ with sync_playwright() as p:
    if w in [1440,390] and path in ['services/','services/google-ads-management/','services/seo/']:
     page.screenshot(path=str(SHOTS/(('desktop-' if w==1440 else 'mobile-')+path.strip('/').replace('/','-')+'.png')),full_page=True)
    assert not errors,errors;assert not bad,bad
-  page.goto(urljoin(BASE,'services/google-ads-management/'),wait_until='domcontentloaded');page.locator('.service-hero .service-button').click();page.wait_for_selector('#brief-type');page.wait_for_timeout(400);assert page.locator('#brief-type').input_value()=='google-ads'
+  page.goto(urljoin(BASE,'services/google-ads-management/'),wait_until='domcontentloaded');page.locator('.service-hero .service-button').click();page.wait_for_selector('#brief-type');page.wait_for_selector('#kenny-entry-intro',state='detached');page.wait_for_timeout(400);assert page.locator('#brief-type').input_value()=='google-ads'
   page.locator('#brief-name').fill('Preview client');page.locator('#brief-description').fill('Search ads for my training centre.');page.locator('.brief-submit').click();message=parse_qs(urlparse(page.locator('.brief-whatsapp').get_attribute('href')).query)['text'][0];assert 'Google Ads management' in message and 'Preview client' in message
   page.locator('#brief-language').select_option('zh');assert page.locator('#brief-name').input_value()=='Preview client';page.locator('#brief-language').select_option('en')
   page.evaluate('scrollTo(0,0)');page.wait_for_timeout(250)

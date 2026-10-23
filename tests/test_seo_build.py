@@ -13,16 +13,18 @@ class HTML(HTMLParser):
 class SEOTests(unittest.TestCase):
  def run_build(self,d,**env):return subprocess.run(['python',str(ROOT/'scripts/build_site.py')],cwd=ROOT,env={**os.environ,'SITE_URL':'','SITE_URL_VERIFIED':'false','BUILD_INDEXABLE':'false','GOOGLE_SITE_VERIFICATION':'','GA4_MEASUREMENT_ID':'','GTM_CONTAINER_ID':'','OUTPUT_DIR':d,**env},capture_output=True,text=True)
  def test_preview_has_crawlable_unique_pages_and_no_guessed_domain(self):
-  manifest=json.loads((ROOT/'assets/build-manifest.json').read_text());titles=[];descriptions=[]
-  for path in manifest['pages']:
-   p=ROOT/('index.html' if path=='/' else path.strip('/')+'/index.html');s=p.read_text();html=HTML(s)
-   self.assertEqual(len(html.attrs('h1')),1,path);self.assertFalse(any(a.get('rel')=='canonical' for a in html.attrs('link')),path)
-   self.assertTrue(any(a.get('name')=='robots' and 'noindex' in a.get('content','') for a in html.attrs('meta')))
-   titles.append(re.search(r'<title>(.*?)</title>',s)[1]);descriptions.append(next(a['content'] for a in html.attrs('meta') if a.get('name')=='description'))
-   self.assertGreater(len(' '.join(html.text)),700,path)
-  self.assertEqual(len(set(titles)),6);self.assertEqual(len(set(descriptions)),6)
-  self.assertIn('Disallow: /',(ROOT/'robots.txt').read_text());self.assertFalse((ROOT/'sitemap.xml').exists())
-  self.assertIn('Website Designer in Malaysia',titles[0]);self.assertIn('Google Ads Management',(ROOT/'index.html').read_text());self.assertIn('SEO Services',(ROOT/'index.html').read_text())
+  with tempfile.TemporaryDirectory() as d:
+   result=self.run_build(d);self.assertEqual(result.returncode,0,result.stderr);out=Path(d)
+   manifest=json.loads((out/'assets/build-manifest.json').read_text());titles=[];descriptions=[]
+   for path in manifest['pages']:
+    p=out/('index.html' if path=='/' else path.strip('/')+'/index.html');s=p.read_text();html=HTML(s)
+    self.assertEqual(len(html.attrs('h1')),1,path);self.assertFalse(any(a.get('rel')=='canonical' for a in html.attrs('link')),path)
+    self.assertTrue(any(a.get('name')=='robots' and 'noindex' in a.get('content','') for a in html.attrs('meta')))
+    titles.append(re.search(r'<title>(.*?)</title>',s)[1]);descriptions.append(next(a['content'] for a in html.attrs('meta') if a.get('name')=='description'))
+    self.assertGreater(len(' '.join(html.text)),700,path)
+   self.assertEqual(len(set(titles)),6);self.assertEqual(len(set(descriptions)),6)
+   self.assertIn('Disallow: /',(out/'robots.txt').read_text());self.assertFalse((out/'sitemap.xml').exists())
+   self.assertIn('Website Designer in Malaysia',titles[0]);self.assertIn('Google Ads Management',(out/'index.html').read_text());self.assertIn('SEO Services',(out/'index.html').read_text())
  def test_indexable_build_guard_and_configuration_validation(self):
   with tempfile.TemporaryDirectory() as d:
    self.assertNotEqual(self.run_build(d,BUILD_INDEXABLE='true').returncode,0)

@@ -13,7 +13,8 @@ files += [p.relative_to(ROOT) for p in (ROOT/'assets/fonts').glob('*.woff2')]
 files += [p.relative_to(ROOT) for p in (ROOT/'frames/globe').rglob('*') if p.is_file()]
 for p in (ROOT/'media').rglob('*'):
  if p.is_file() and (p.suffix!='.mp4' or p.stem.endswith('-web') or p.name=='kenny-hero-mask.mp4'):files.append(p.relative_to(ROOT))
-if (ROOT/'sitemap.xml').exists():files.append(Path('sitemap.xml'))
+for optional in ['sitemap.xml','CNAME']:
+ if (ROOT/optional).exists():files.append(Path(optional))
 for rel in files:
  target=DEST/rel;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/rel,target)
 archive=DEST.parent/'kenny-studio-seo-preview.zip'

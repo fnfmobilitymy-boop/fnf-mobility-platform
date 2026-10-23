@@ -2,11 +2,11 @@
 from pathlib import Path
 import tempfile,subprocess,os,threading,http.server,functools,json
 from playwright.sync_api import sync_playwright
-ROOT=Path(__file__).resolve().parents[1];BASE='http://127.0.0.1:8126/fnf-mobility-platform/'
+ROOT=Path(__file__).resolve().parents[1];BASE=os.environ.get('PREVIEW_URL','http://127.0.0.1:8126/fnf-mobility-platform/')
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-webgl'])
  page=b.new_page(viewport={'width':1440,'height':1000});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script('localStorage.setItem("kenny-music","off");localStorage.setItem("kenny-language","en");window.cls=0;new PerformanceObserver(l=>l.getEntries().forEach(e=>{if(!e.hadRecentInput)cls+=e.value})).observe({type:"layout-shift",buffered:true})')
- page.goto(BASE,wait_until='domcontentloaded');page.wait_for_timeout(1600);cls=page.evaluate('cls');assert cls<.1,cls
+ page.goto(BASE,wait_until='domcontentloaded');page.wait_for_selector('#kenny-entry-intro',state='detached');page.wait_for_timeout(1600);cls=page.evaluate('cls');assert cls<.1,cls
  page.locator('#coverage').evaluate('e=>e.scrollIntoView({behavior:"instant"})');canvas=page.locator('.world-stage canvas');canvas.wait_for();canvas.scroll_into_view_if_needed();page.wait_for_timeout(300);assert page.locator('.world-list button').count()==250
  r=canvas.bounding_box();page.mouse.move(r['x']+r['width']/2,r['y']+r['height']/2);before=float(canvas.get_attribute('data-zoom'));page.mouse.wheel(0,-120);page.wait_for_timeout(150);assert float(canvas.get_attribute('data-zoom'))>before
  page.locator('#world-search').fill('JP');page.locator('[data-code=JP]').click();assert page.locator('.world-mount').get_attribute('data-selected')=='JP'
@@ -15,7 +15,7 @@ with sync_playwright() as p:
  b.close()
  # Check actual WebGL gallery controls with Chromium software GL, rather than only fallback markup.
  b=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
- page=b.new_page(viewport={'width':1366,'height':900});page.add_init_script('localStorage.setItem("kenny-music","off")');page.goto(BASE+'#projects',wait_until='domcontentloaded');page.wait_for_selector('.work-gallery.has-webgl');before=page.locator('.work-orbit-caption h3').inner_text() if page.locator('.work-orbit-caption h3').count() else ''
+ page=b.new_page(viewport={'width':1366,'height':900});page.add_init_script('localStorage.setItem("kenny-music","off")');page.goto(BASE+'#projects',wait_until='domcontentloaded');page.wait_for_selector('.work-gallery.has-webgl');page.wait_for_selector('#kenny-entry-intro',state='detached');before=page.locator('.work-orbit-caption h3').inner_text() if page.locator('.work-orbit-caption h3').count() else ''
  stage=page.locator('.work-orbit-stage');stage.focus();stage.press('End');page.wait_for_function('document.querySelector("#projects").innerText.includes("London Medical")',timeout=12000);print('PASS curved WebGL renderer and keyboard project navigation',flush=True);b.close()
  for mode in ['GA4','GTM']:
   with tempfile.TemporaryDirectory() as d:

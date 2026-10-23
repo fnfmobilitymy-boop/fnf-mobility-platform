@@ -154,5 +154,8 @@ if INDEXABLE:write('sitemap.xml','<?xml version="1.0" encoding="UTF-8"?>\n'+ET.t
 elif (OUT/'sitemap.xml').exists():(OUT/'sitemap.xml').unlink()
 robots='User-agent: *\n'+('Allow: /\nDisallow: /source/\nDisallow: /scripts/\nDisallow: /tests/\nDisallow: /docs/\nDisallow: /admin/\nDisallow: /preview/\nSitemap: '+url('/sitemap.xml')+'\n' if INDEXABLE else 'Disallow: /\n')
 write('robots.txt',robots)
+# Preserve the approved custom-domain binding in the clean Pages release.
+if INDEXABLE and not urlparse(ORIGIN).hostname.endswith('.github.io'):write('CNAME',urlparse(ORIGIN).hostname+'\n')
+elif (OUT/'CNAME').exists():(OUT/'CNAME').unlink()
 write('assets/build-manifest.json',json.dumps({'indexable':INDEXABLE,'origin':ORIGIN or None,'pages':list(PAGES),'css':CSS,'app':APP,'runtime':RUNTIME,'extra_css':EXTRA},indent=2))
 print('Built',len(PAGES),'static pages; indexable =',INDEXABLE,'; production origin =',ORIGIN or '(unset)')

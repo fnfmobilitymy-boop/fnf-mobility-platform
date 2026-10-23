@@ -1,6 +1,6 @@
 {
-  "indexable": false,
-  "origin": null,
+  "indexable": true,
+  "origin": "https://kennystudio.cfd",
   "pages": [
     "/",
     "/services/",

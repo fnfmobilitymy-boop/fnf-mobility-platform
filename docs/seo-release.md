@@ -37,9 +37,9 @@ python3 scripts/prerender_home.py
 
 The snapshot intentionally contains a disabled/inert interactive form when JavaScript is absent, with working email and WhatsApp alternatives. This avoids a no-JavaScript browser submitting personal form values in a default GET request. The existing live React form replaces it and behaves normally.
 
-## Production domain: required, currently unverified
+## Production domain: kennystudio.cfd
 
-The Namecheap domain was unavailable. The restored GitHub URL is a temporary demo, not an assumed new official production origin. `.env.example` documents configuration; the build reads environment variables. It does not load or commit secret account files.
+The owner selected `https://kennystudio.cfd`, completed the Spaceship DNS records, reported a successful GitHub DNS check, and confirmed the website opens after HTTPS activation. The old Namecheap domain is no longer the production origin. `.env.example` documents configuration; the build reads environment variables. It does not load or commit secret account files.
 
 Preview defaults:
 
@@ -51,14 +51,14 @@ Preview defaults:
 Only after confirming the official domain, DNS, HTTPS and release approval, set:
 
 ```sh
-export SITE_URL='https://your-verified-production-origin'
+export SITE_URL='https://kennystudio.cfd'
 export SITE_URL_VERIFIED=true
 export BUILD_INDEXABLE=true
 python3 scripts/build_site.py
 python3 scripts/package_preview.py
 ```
 
-The URL above is an instruction placeholder, not a shipped canonical. Use the actual approved HTTPS origin (including a deployment subpath if applicable). The builder rejects missing/unverified origins for an indexable build, query/fragment-bearing origins and invalid tracking identifiers.
+The URL above is the approved production origin. The build also emits its CNAME, and clean packaging preserves the binding. The builder rejects missing/unverified origins for an indexable build, query/fragment-bearing origins and invalid tracking identifiers.
 
 The production build generates absolute per-route canonicals, matching OG URLs/images and Twitter metadata, an XML sitemap containing only the six canonical indexable pages, and robots with the sitemap URL. Query-string links do not create extra sitemap entries. `404.html` is noindex and excluded. Internal source/preview/admin paths are disallowed. The clean release package does not contain internal source or duplicate source HTML at all. GitHub Pages provides directory redirects; canonical links consolidate explicit `index.html` variants. Search engines determine indexing, not sitemap submission alone.
 
@@ -67,7 +67,7 @@ The JSON-LD graph uses verified Organization, WebSite, WebPage, Service and Brea
 ## Search Console
 
 1. Confirm the real production origin and restore its DNS/HTTPS if necessary.
-2. In your own Google Search Console account create the appropriate property. Domain-property DNS verification requires access to the active DNS provider; the frozen registrar account cannot be bypassed in code.
+2. In your own Google Search Console account create the appropriate property. Domain-property DNS verification uses a real verification TXT record in the current Spaceship DNS provider.
 3. For HTML-tag URL-prefix verification, copy the real token to `GOOGLE_SITE_VERIFICATION`, rebuild, deploy the approved release, then verify in Search Console. The build adds the tag only when supplied. No token has been invented or configured.
 4. Submit the production `/sitemap.xml`; inspect homepage and service URLs, their selected canonicals and indexing reports.
 
@@ -87,6 +87,6 @@ A GTM container must be reviewed so its tags respect consent; adding a container
 - Local initial homepage CLS measured 0.0 in the tested Chromium run. This is not field Core Web Vitals, a Lighthouse score, or a promise of performance on every device. Animations and source media remain substantial; Search Console/CrUX should be reviewed after an approved release.
 - Local-only synthetic test fixtures verify GA4/GTM consent gating without contacting Google. No fixture IDs/tokens are used by the preview or production configuration.
 
-## Approval boundary
+## Release approval
 
-Only the separately approved default-domain restoration (`e84b6db`) was published. This SEO build is a noindex preview on its own branch. Do not push it to `gh-pages` or upload the release artifact until the owner approves the concrete preview and production settings. Preserve the source branch for future builds; deploy only the clean package contents to the publishing branch.
+The owner explicitly approved publishing the SEO build to `kennystudio.cfd` on 2026-10-23. Deploy only the clean package contents to `gh-pages`; retain this source branch for future builds. Real Search Console and analytics IDs remain unconfigured. The release retains the latest neon HELLO intro, reference opening sound, background song and visitor-interaction playback fallback.
