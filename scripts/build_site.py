@@ -138,7 +138,9 @@ def footer(prefix):return '<footer class="service-footer"><span data-ui="copyrig
 for path,(title,desc) in PAGES.items():
  if path=='/':
   markup=(ROOT/'source/seo/home.html').read_text() if (ROOT/'source/seo/home.html').exists() else ''
-  html=head(path,title,desc,'./')+'<body><div id="root">'+markup+'</div><noscript><style>.main-nav{display:flex!important;position:static!important;flex-wrap:wrap;background:#100b19;padding:15px}.menu-toggle,.assistant-orb{display:none!important}</style><p style="padding:20px;color:#d6c7e6">Interactive controls and the project form need JavaScript. You can still browse the portfolio and <a href="mailto:kennystudio09@gmail.com">email Kenny</a> or <a href="https://wa.me/message/DHXOYXRCJIKZK1">contact Kenny on WhatsApp</a>.</p></noscript></body></html>'
+  intro_match=re.search(r'<!-- kenny-entry-start -->.*?<!-- kenny-entry-end -->',legacy,re.S)
+  intro=intro_match.group(0) if intro_match else ''
+  html=head(path,title,desc,'./')+'<body><div id="root">'+markup+'</div>'+intro+'<noscript><style>.main-nav{display:flex!important;position:static!important;flex-wrap:wrap;background:#100b19;padding:15px}.menu-toggle,.assistant-orb{display:none!important}</style><p style="padding:20px;color:#d6c7e6">Interactive controls and the project form need JavaScript. You can still browse the portfolio and <a href="mailto:kennystudio09@gmail.com">email Kenny</a> or <a href="https://wa.me/message/DHXOYXRCJIKZK1">contact Kenny on WhatsApp</a>.</p></noscript></body></html>'
  else:
   prefix='../'*(len(path.strip('/').split('/')));kind='services' if path=='/services/' else 'privacy' if path=='/privacy/' else path.strip('/').split('/')[-1]
   bodies={l:('' if INDEXABLE else '<span class="preview-label" data-ui="notice">'+UI[l]['notice']+'</span>')+page_body(kind,prefix,l) for l in UI};html=head(path,title,desc,prefix,kind)+'<body class="service-page">'+header(prefix,kind)+'<main id="service-content" class="service-main">'+bodies['en']+'</main>'+footer(prefix)+'<script id="page-copy" type="application/json">'+j(bodies)+'</script></body></html>'
