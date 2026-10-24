@@ -30,6 +30,7 @@ def asset(name,content):
  suffix=hashlib.sha256(content.encode()).hexdigest()[:10];p=f'assets/{name.rsplit(".",1)[0]}.{suffix}.{name.rsplit(".",1)[1]}';write(p,content);return p
 legacy=(ROOT/'source/seo/legacy-export.html').read_text()
 css='\n'.join(re.findall(r'<style[^>]*>(.*?)</style>',legacy,re.S))
+if (ROOT/'assets/reference-motion.css').exists():css+='\n'+(ROOT/'assets/reference-motion.css').read_text()
 font_count=0
 font_files=[]
 def font(m):
@@ -38,6 +39,12 @@ def font(m):
 css=re.sub(r'url\(data:font/woff2;base64,([A-Za-z0-9+/=]+)\)',font,css)
 CSS=asset('portfolio.css',css);EXTRA=asset('services.css',(ROOT/'assets/service-pages.css').read_text())
 app=max(re.findall(r'<script[^>]*>(.*?)</script>',legacy,re.S),key=len)
+# Keep reference motion editable apart from the retained bundled export.
+motion=ROOT/'source/motion/chapter-flow.js'
+if motion.exists():
+ start=app.rfind('function ol(e,t,n){');assert start>=0
+ end=app.index('},[t])}',start)+len('},[t])}')
+ app=app[:start]+motion.read_text()+app[end:]
 def replace(old,new,count=1):
  global app
  if old not in app:raise SystemExit('Legacy patch marker missing: '+old[:70])

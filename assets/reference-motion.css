@@ -1,0 +1,5 @@
+/* Transform-only camera treatment. Native video decoding remains untouched. */
+.reference-motion-enabled .kenny-hero-screen{transform-origin:78% 42%;transform:scale(var(--reference-camera-scale,1));transition:transform .15s linear;will-change:transform}
+.reference-motion-enabled .scene-first-frame,.reference-motion-enabled .scene-original,.reference-motion-enabled .scene-character-idle{transform-origin:75% 45%}
+@media(max-width:760px){.reference-motion-enabled .kenny-hero-screen{transform-origin:72% 39%}}
+@media(prefers-reduced-motion:reduce){.reference-motion-enabled .kenny-hero-screen{transform:none!important;transition:none;will-change:auto}}
