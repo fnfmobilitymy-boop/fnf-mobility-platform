@@ -1,5 +1,14 @@
 [
   {
+    "id": "kenny-kitchen",
+    "name": "KENNY KITCHEN",
+    "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/aistudio@2fa099c24d564738ad82bf6f492076068470d993; deployment confirmed kennykitchendemo.cfd",
+    "file": "kenny-kitchen.webp",
+    "width": 1440,
+    "height": 900,
+    "bytes": 89450
+  },
+  {
     "id": "bloomthis",
     "name": "BloomThis",
     "source": "BloomThis.zip",
