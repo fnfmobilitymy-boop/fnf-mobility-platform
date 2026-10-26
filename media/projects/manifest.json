@@ -1,5 +1,14 @@
 [
   {
+    "id": "wukong",
+    "name": "WUKONG",
+    "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/nftproject_wukong@be262ce7c051aa36da83d725fb7f22c93fe5f730",
+    "file": "wukong.webp",
+    "width": 1440,
+    "height": 900,
+    "bytes": 239912
+  },
+  {
     "id": "kenny-kitchen",
     "name": "KENNY KITCHEN",
     "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/aistudio@2fa099c24d564738ad82bf6f492076068470d993; deployment confirmed kennykitchendemo.cfd",
