@@ -72,6 +72,7 @@ translations={'zh':{'Google Ads Management':'Google Ads 广告管理','SEO Servi
 translations['ms'].update({'RESTAURANT DEMO':'DEMO RESTORAN','Restaurant concept demo. Explore the website.':'Demo konsep restoran. Terokai laman web.'})
 translations['ms'].update({'CREATIVE LANDING PAGE DEMO':'DEMO HALAMAN PENDARATAN KREATIF','Journey to the West character collection landing page demo.':'Demo halaman pendaratan koleksi watak bertemakan Journey to the West.'})
 translations['ms'].update({'TRANSPORT & TRAVEL WEBSITE':'LAMAN WEB PENGANGKUTAN & PELANCONGAN','Private chauffeur, airport transfer and travel website.':'Laman web pemandu persendirian, pemindahan lapangan terbang dan pelancongan.'})
+translations['ms'].update({'FURNITURE SERVICE DEMO':'DEMO PERKHIDMATAN PERABOT','Furniture restoration and sofa upholstery website demo.':'Demo laman web pemulihan perabot dan upholsteri sofa.'})
 helper=''.join('Object.assign(KENNY_TRANSLATIONS.'+lang+','+j(v)+');' for lang,v in translations.items())+'''function kennyServiceLinks(){return y.createElement('nav',{className:'seo-service-links','aria-label':kennyText('All services')},...[['./services/','All services'],['./services/website-design/','Website Design'],['./services/google-ads-management/','Google Ads Management'],['./services/seo/','SEO Services']].map(([href,text])=>y.createElement('a',{href,key:href},kennyText(text)+' ↗')))}'''
 replace('function Al(){',helper+'function Al(){')
 APP=asset('portfolio.js',app)

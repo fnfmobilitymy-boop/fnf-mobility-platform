@@ -1,5 +1,14 @@
 [
   {
+    "id": "global-mars",
+    "name": "GLOBAL MARS · DEMO",
+    "source": "Rendered locally from fnfmobilitymy-boop/Awishfurniture@75362c20570b2113d818e53c79f1a77636151781; actual homepage branding is GLOBAL MARS",
+    "file": "global-mars.webp",
+    "width": 1440,
+    "height": 1000,
+    "bytes": 116850
+  },
+  {
     "id": "travthru",
     "name": "TRAVTHRU",
     "source": "Rendered from fnfmobilitymy-boop/TRAVTHRU@51329cbce2ebd69a635027399756815694616303; homepage appearance confirmed against owner-supplied screenshot",
