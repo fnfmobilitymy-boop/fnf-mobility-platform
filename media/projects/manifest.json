@@ -1,5 +1,14 @@
 [
   {
+    "id": "kenny-store",
+    "name": "KENNY STORE · DEMO",
+    "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/hangover@6efeb91217d4f715dee6021c5ef636c64d2a33d7; concept store/frontend demo labelled in original footer",
+    "file": "kenny-store.webp",
+    "width": 1440,
+    "height": 1000,
+    "bytes": 96848
+  },
+  {
     "id": "property-agent",
     "name": "ALYSSA LIM · DEMO",
     "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/property@52e1a0187a39aadc07585363439787b1f1aea52a; concept website labelled in original footer",
