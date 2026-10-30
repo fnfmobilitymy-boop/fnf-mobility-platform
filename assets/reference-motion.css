@@ -27,3 +27,12 @@ html[lang=zh] .kenny-portfolio #hero-title{font-size:clamp(48px,5.1vw,80px);line
 .kenny-portfolio main>.chapter-shell>section.world-coverage{height:auto;min-height:100svh;max-height:none;background-color:#050609;padding:120px 6vw 100px}
 .kenny-portfolio .world-coverage .world-heading h2,.kenny-portfolio .world-coverage .world-selected h3{font-family:var(--kenny-geometric);font-weight:800}
 @media(max-width:900px){.kenny-portfolio main>.chapter-shell>section.world-coverage{padding:110px 7vw 100px}}
+
+/* Interactive content stays in normal flow; only visual chapters hold in place. */
+.chapter-stack-enabled main>.chapter-shell[data-chapter-id=coverage]{height:var(--chapter-height)}
+.chapter-stack-enabled main>.chapter-shell[data-chapter-id=coverage]+.chapter-shell{margin-top:0}
+.chapter-stack-enabled main>.chapter-shell>section:is(#coverage,#project-brief){position:relative;top:auto;border-radius:0;box-shadow:none}
+.chapter-stack-enabled #coverage .world-visual,.chapter-stack-enabled #project-brief .brief-intro{position:static}
+.kenny-portfolio .fluid-cursor{opacity:.42;transition:opacity .16s linear}
+.kenny-portfolio:is(.is-scrolling,.chapter-interaction-active) .fluid-cursor{opacity:0}
+@media(prefers-reduced-motion:reduce){.kenny-portfolio .fluid-cursor{display:none!important}}

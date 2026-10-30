@@ -34,6 +34,13 @@ def asset(name,content):
  suffix=hashlib.sha256(content.encode()).hexdigest()[:10];p=f'assets/{name.rsplit(".",1)[0]}.{suffix}.{name.rsplit(".",1)[1]}';write(p,content);return p
 legacy=(ROOT/'source/seo/legacy-export.html').read_text()
 css='\n'.join(re.findall(r'<style[^>]*>(.*?)</style>',legacy,re.S))
+# Preserve the original direct-child layout rules with React-owned chapter shells.
+# Duplicate full selectors rather than weakening them to arbitrary descendants.
+def chapter_selectors(match):
+ selector=match.group(1)
+ patched=re.sub(r'main\s*>\s*section', 'main>.chapter-shell>section', selector)
+ return selector+(','+patched if patched!=selector else '')+'{'
+css=re.sub(r'(?:^|(?<=[{}]))([^{}]+)\{',chapter_selectors,css)
 if (ROOT/'assets/reference-motion.css').exists():css+='\n'+(ROOT/'assets/reference-motion.css').read_text()
 font_count=0
 font_files=[]
@@ -59,7 +66,7 @@ old='I’m Kenny, an independent web designer with 2 years of experience. I crea
 new='I’m Kenny, a freelance website designer based in Malaysia. I build landing pages, business websites and e-commerce experiences, with Google Ads management and SEO services available to support your next stage.'
 replace('`'+old+'`','`'+new+'`',count=1)
 replace('`> INDEPENDENT DESIGN & DEVELOPMENT · 2026`','`> FREELANCE WEBSITE DESIGNER IN MALAYSIA · 2026`')
-replace("import('./frames/globe/globe.js?v=zoom1')",'import(new URL("frames/globe/globe.js?v=zoom1",document.baseURI).href)')
+replace("import('./frames/globe/globe.js?v=zoom1')",'import(new URL("frames/globe/globe.js?v=stability2",document.baseURI).href)')
 # Keep every original service and add two; no original budget/price strings are changed.
 marker=']],w=!!(Q.contact.email'
 replace(marker,'],[`11`,`Google Ads Management`,`↗`,b?`搜索广告建立、关键词、预算与咨询追踪，按实际数据持续优化，广告费用与管理费分开。`:`Search campaign setup, keyword research, budget monitoring and lead tracking, with separate ad spend and management fees.`],[`12`,`SEO Services`,`◎`,b?`网站审查、技术与页面优化、搜索设置及表现报告，按实际业务另行评估本地商家资料。`:`Website audits, technical and on-page SEO, search setup and reporting, with local business-profile work scoped separately.`]],w=!!(Q.contact.email')
@@ -90,6 +97,10 @@ replace('return factory(type,props,key)',"const node=factory(type,props,key);ret
 replace('return y.createElement(type,props,...children)',"const node=y.createElement(type,props,...children);return type==='section'&&props?.id?y.createElement('div',{className:'chapter-shell','data-chapter-id':props.id,key:props.key},node):node")
 app=app.replace('main > section[id]','main > .chapter-shell > section[id], main > section[id]')
 replace("return y.createElement('section',{id:'coverage'","return kennyElement('section',{id:'coverage'")
+# The fluid simulation sleeps over interactive chapters and during page scrolling.
+replace('let touchDevice=matchMedia',"const kennyMotionRoot=r.closest('.kenny-portfolio');let touchDevice=matchMedia")
+replace('if(C=0,document.hidden||e-T>1850)',"if(C=0,document.hidden||kennyMotionRoot?.matches('.is-scrolling,.chapter-interaction-active')||e-T>1850)")
+replace('if(![`mouse`,`pen`,`touch`].includes(e.pointerType)||document.hidden)return;',"if(![`mouse`,`pen`,`touch`].includes(e.pointerType)||document.hidden||kennyMotionRoot?.matches('.is-scrolling,.chapter-interaction-active'))return;")
 APP=asset('portfolio.js',app)
 # Shared static page behaviour and consent loading. Tracking IDs remain empty by default.
 RUNTIME=asset('site.js',(ROOT/'assets/site-runtime.js').read_text()+'\n'+(ROOT/'source/payments/calculation.js').read_text()+'\n'+(ROOT/'source/payments/payment-runtime.js').read_text()+'\n'+(ROOT/'source/payments/cart-runtime.js').read_text()+'\n'+(ROOT/'source/payments/invoice-runtime.js').read_text())
