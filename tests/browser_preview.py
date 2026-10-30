@@ -19,7 +19,7 @@ with sync_playwright() as p:
     assert page.locator('.skill-card').count()==12
     assert page.locator('video').first.evaluate('v=>!v.paused&&v.currentTime>0')
     assert page.locator('#brief-type option[value="google-ads"]').count()==1
-    assert page.locator('.client-project-directory a').count()==21 or page.locator('a[href="https://bloomthis.co"]').count()>0
+    assert page.locator('.client-project-directory a').count()==22 or page.locator('a[href="https://bloomthis.co"]').count()>0
     page.evaluate('document.getElementById("skills").scrollIntoView({behavior:"instant"})');page.wait_for_timeout(200)
     assert page.locator('.seo-service-links a[href="./services/google-ads-management/"]').count()>0
    else:

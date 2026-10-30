@@ -1,5 +1,14 @@
 [
   {
+    "id": "saloon",
+    "name": "SALOON · DEMO",
+    "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/saloon@f1dd9e731c006c364b0bac08625c9b3683cdb669; welcome dialog dismissed through its close control before capture",
+    "file": "saloon.webp",
+    "width": 1440,
+    "height": 1000,
+    "bytes": 60404
+  },
+  {
     "id": "kenny-store",
     "name": "KENNY STORE · DEMO",
     "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/hangover@6efeb91217d4f715dee6021c5ef636c64d2a33d7; concept store/frontend demo labelled in original footer",

@@ -46,7 +46,7 @@ class SEOTests(unittest.TestCase):
  def test_existing_projects_contacts_and_budget_choices_preserved(self):
   source=max(re.findall(r'<script[^>]*>(.*?)</script>',(ROOT/'source/seo/legacy-export.html').read_text(),re.S),key=len);m=json.loads((ROOT/'assets/build-manifest.json').read_text());app=(ROOT/m['app']).read_text()
   self.assertEqual(set(re.findall(r'RM[\d,.–-]+',source)),set(re.findall(r'RM[\d,.–-]+',app)))
-  projects=json.loads((ROOT/'media/projects/manifest.json').read_text());self.assertEqual(len(projects),21)
+  projects=json.loads((ROOT/'media/projects/manifest.json').read_text());self.assertEqual(len(projects),22)
   for p in projects:self.assertTrue((ROOT/'media/projects'/f"{p['id']}.webp").exists());self.assertIn(p['id'],app)
   for contact in ['kennystudio09@gmail.com','DHXOYXRCJIKZK1','t.me/KennyStudio','+6011-6773 5644']:self.assertTrue(contact in app,contact)
   for name in ['Landing Pages','Personal Brand Websites','Business Websites','E-commerce Websites','Booking & Reservations','CMS & Admin Dashboards','Custom Web Systems','Backend & Integrations','Website Redesign','SEO, Launch & Care']:self.assertIn(name,app)
