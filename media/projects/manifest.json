@@ -1,5 +1,14 @@
 [
   {
+    "id": "hustle-barber",
+    "name": "THE HUSTLE BARBER CLUB · DEMO",
+    "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/barber@b62ea464e3e06084efe11995a62de58e856259e7; booking invitation dismissed through its close control before capture",
+    "file": "hustle-barber.webp",
+    "width": 1440,
+    "height": 1000,
+    "bytes": 82950
+  },
+  {
     "id": "saloon",
     "name": "SALOON · DEMO",
     "source": "Actual deployed source rendered locally: fnfmobilitymy-boop/saloon@f1dd9e731c006c364b0bac08625c9b3683cdb669; welcome dialog dismissed through its close control before capture",
