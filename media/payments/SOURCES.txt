@@ -1,0 +1,4 @@
+Payment method icons: activemerchant/payment_icons (Shopify), https://github.com/activemerchant/payment_icons
+Files: app/assets/images/payment_icons/onlinebanktransfer.svg, touchngo.svg, stripe.svg.
+Brand marks identify requested payment methods; no partnership or endorsement is claimed.
+Payment collection remains disabled until real merchant details and account integration are configured.

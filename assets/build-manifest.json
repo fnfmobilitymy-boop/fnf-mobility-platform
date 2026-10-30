@@ -7,10 +7,14 @@
     "/services/website-design/",
     "/services/google-ads-management/",
     "/services/seo/",
+    "/pricing/",
     "/privacy/"
   ],
+  "utility_pages": [
+    "/order/"
+  ],
   "css": "assets/portfolio.082d55ea9a.css",
-  "app": "assets/portfolio.318b897cbb.js",
-  "runtime": "assets/site.8e361b61d8.js",
-  "extra_css": "assets/services.e914321ac1.css"
+  "app": "assets/portfolio.e6695d6891.js",
+  "runtime": "assets/site.ae35f6ccf8.js",
+  "extra_css": "assets/services.492a1b8611.css"
 }

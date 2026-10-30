@@ -22,7 +22,7 @@ class SEOTests(unittest.TestCase):
     self.assertTrue(any(a.get('name')=='robots' and 'noindex' in a.get('content','') for a in html.attrs('meta')))
     titles.append(re.search(r'<title>(.*?)</title>',s)[1]);descriptions.append(next(a['content'] for a in html.attrs('meta') if a.get('name')=='description'))
     self.assertGreater(len(' '.join(html.text)),700,path)
-   self.assertEqual(len(set(titles)),6);self.assertEqual(len(set(descriptions)),6)
+   self.assertEqual(len(set(titles)),len(manifest['pages']));self.assertEqual(len(set(descriptions)),len(manifest['pages']))
    self.assertIn('Disallow: /',(out/'robots.txt').read_text());self.assertFalse((out/'sitemap.xml').exists())
    self.assertIn('Website Designer in Malaysia',titles[0]);self.assertIn('Google Ads Management',(out/'index.html').read_text());self.assertIn('SEO Services',(out/'index.html').read_text())
  def test_indexable_build_guard_and_configuration_validation(self):
@@ -41,14 +41,14 @@ class SEOTests(unittest.TestCase):
     html=HTML((Path(d)/('index.html' if path=='/' else path.strip('/')+'/index.html')).read_text());canonical=next(a['href'] for a in html.attrs('link') if a.get('rel')=='canonical');self.assertEqual(canonical,'https://example.invalid/studio'+path);urls.append(canonical)
     self.assertTrue(any(a.get('name')=='google-site-verification' for a in html.attrs('meta')))
     s=(Path(d)/('index.html' if path=='/' else path.strip('/')+'/index.html')).read_text();data=json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>',s,re.S)[1]);org=data['@graph'][0]
-    self.assertEqual(org['email'],'kennystudio09@gmail.com');self.assertNotIn('address',org);self.assertNotIn('aggregateRating',s);self.assertNotIn('reviewCount',s)
+    self.assertEqual(org['email'],'hello@kennystudio.cfd');self.assertNotIn('address',org);self.assertNotIn('aggregateRating',s);self.assertNotIn('reviewCount',s)
    sitemap=ET.parse(Path(d)/'sitemap.xml');self.assertEqual([x[0].text for x in sitemap.getroot()],urls);self.assertNotIn('404',str(urls));self.assertNotIn('preview',str(urls));self.assertIn('https://example.invalid/studio/sitemap.xml',(Path(d)/'robots.txt').read_text())
  def test_existing_projects_contacts_and_budget_choices_preserved(self):
   source=max(re.findall(r'<script[^>]*>(.*?)</script>',(ROOT/'source/seo/legacy-export.html').read_text(),re.S),key=len);m=json.loads((ROOT/'assets/build-manifest.json').read_text());app=(ROOT/m['app']).read_text()
   self.assertEqual(set(re.findall(r'RM[\d,.–-]+',source)),set(re.findall(r'RM[\d,.–-]+',app)))
   projects=json.loads((ROOT/'media/projects/manifest.json').read_text());self.assertEqual(len(projects),23)
   for p in projects:self.assertTrue((ROOT/'media/projects'/f"{p['id']}.webp").exists());self.assertIn(p['id'],app)
-  for contact in ['kennystudio09@gmail.com','DHXOYXRCJIKZK1','t.me/KennyStudio','+6011-6773 5644']:self.assertTrue(contact in app,contact)
+  for contact in ['hello@kennystudio.cfd','DHXOYXRCJIKZK1','t.me/KennyStudio','+6011-6773 5644']:self.assertTrue(contact in app,contact)
   for name in ['Landing Pages','Personal Brand Websites','Business Websites','E-commerce Websites','Booking & Reservations','CMS & Admin Dashboards','Custom Web Systems','Backend & Integrations','Website Redesign','SEO, Launch & Care']:self.assertIn(name,app)
  def test_tracking_not_emitted_in_unapproved_preview(self):
   for p in [ROOT/'index.html',ROOT/'services/seo/index.html']:

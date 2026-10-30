@@ -8,7 +8,7 @@ with sync_playwright() as p:
  for w,h in [(1440,1000),(1024,900),(768,1024),(390,844),(360,800)]:
   c=b.new_context(viewport={'width':w,'height':h},is_mobile=w<700,has_touch=w<700);page=c.new_page();errors=[];bad=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('response',lambda r:bad.append((r.status,r.url)) if r.status>=400 else None)
   page.add_init_script('localStorage.setItem("kenny-language","en");localStorage.setItem("kenny-music","off");window.__cls=0;new PerformanceObserver(l=>l.getEntries().forEach(e=>{if(!e.hadRecentInput)window.__cls+=e.value})).observe({type:"layout-shift",buffered:true})')
-  for path in ['','services/','services/website-design/','services/google-ads-management/','services/seo/','privacy/']:
+  for path in ['','services/','services/website-design/','services/google-ads-management/','services/seo/','pricing/','privacy/']:
    r=page.goto(urljoin(BASE,path),wait_until='domcontentloaded');page.wait_for_timeout(700);assert r.status==200
    if path=='':page.wait_for_selector('#kenny-entry-intro',state='detached')
    assert page.locator('h1').count()==1,(w,path)
@@ -39,7 +39,7 @@ with sync_playwright() as p:
   print('PASS',w,'all routes, 3-language service content, mobile menu, video, 12 services, typed quote CTA/form, no missing assets/errors',flush=True);c.close()
  # A crawler with JavaScript disabled sees the actual homepage and service copy.
  c=b.new_context(java_script_enabled=False);page=c.new_page()
- for path in ['','services/google-ads-management/','services/seo/']:
+ for path in ['','services/google-ads-management/','services/seo/','pricing/']:
   page.goto(urljoin(BASE,path));assert page.locator('h1').count()==1;assert len(page.locator('main').inner_text())>500
   if not path:assert page.locator('.brief-form').get_attribute('inert') is not None
  print('PASS no-JavaScript crawlable content and safe disabled interactive form',flush=True)
