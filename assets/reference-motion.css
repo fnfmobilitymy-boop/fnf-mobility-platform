@@ -3,3 +3,27 @@
 .reference-motion-enabled .scene-first-frame,.reference-motion-enabled .scene-original,.reference-motion-enabled .scene-character-idle{transform-origin:75% 45%}
 @media(max-width:760px){.reference-motion-enabled .kenny-hero-screen{transform-origin:72% 39%}}
 @media(prefers-reduced-motion:reduce){.reference-motion-enabled .kenny-hero-screen{transform:none!important;transition:none;will-change:auto}}
+/* Page-like chapter handoff. Each sticky chapter releases once its successor arrives.
+   Tall sections scroll fully before their final viewport is held in place. */
+.chapter-shell{position:relative;isolation:isolate}
+.chapter-stack-enabled main>.chapter-shell{height:calc(var(--chapter-height) + var(--chapter-viewport,100svh));z-index:var(--chapter-layer,1)}
+.chapter-stack-enabled main>.chapter-shell+.chapter-shell{margin-top:calc(-1 * var(--chapter-viewport,100svh))}
+.chapter-stack-enabled main>.chapter-shell[data-chapter-id=project-brief]{height:var(--chapter-height)}
+.chapter-stack-enabled main>.chapter-shell>section[id]{position:sticky;top:var(--chapter-top,0px);background-color:#09070f;border-radius:var(--chapter-radius,0px) var(--chapter-radius,0px) 0 0;box-shadow:0 -24px 72px #0009}
+.chapter-stack-enabled main>.chapter-shell:first-child>section{box-shadow:none}
+/* Manrope is SIL OFL; geometric, wide and rounded, matching the supplied direction. */
+@font-face{font-family:KennyGeometric;src:url('./fonts/manrope-variable.ttf') format('truetype');font-weight:200 800;font-display:swap;font-style:normal}
+.kenny-portfolio{--kenny-geometric:KennyGeometric,'Noto Sans CJK SC','PingFang SC','Microsoft YaHei',sans-serif}
+.kenny-portfolio h1,.kenny-portfolio h2,.kenny-portfolio h3,.kenny-portfolio .hero-intro,.kenny-portfolio .contact-title{font-family:var(--kenny-geometric);font-style:normal;font-weight:800;font-stretch:normal;letter-spacing:-.045em}
+.kenny-portfolio .hero-title-line>span{font-family:var(--kenny-geometric);font-weight:800;font-style:normal;font-stretch:normal;transform-origin:left center}
+.kenny-portfolio #hero-title{font-size:clamp(54px,6.4vw,100px);line-height:1.02;letter-spacing:-.065em}
+.kenny-portfolio .hero-title-line{line-height:1.08;padding-bottom:.04em}
+.kenny-portfolio .hero-title-line.outline-word>span{-webkit-text-stroke:1.3px #ddd2f0;color:transparent}
+html[lang=zh] .kenny-portfolio #hero-title{font-size:clamp(48px,5.1vw,80px);line-height:1.18;letter-spacing:-.035em}
+.kenny-portfolio .section-title{letter-spacing:-.05em;line-height:1.12}
+@media(max-width:760px){.kenny-portfolio #hero-title{font-size:clamp(36px,9.3vw,62px);letter-spacing:-.065em}.kenny-portfolio .hero-title-line{line-height:1.15}html[lang=zh] .kenny-portfolio #hero-title{font-size:clamp(38px,10.1vw,60px);line-height:1.2}.kenny-portfolio h2{letter-spacing:-.045em}.chapter-stack-enabled main>.chapter-shell>section[id]{box-shadow:0 -12px 36px #0008}}
+@media(prefers-reduced-motion:reduce){.chapter-stack-enabled main>.chapter-shell{height:auto}.chapter-stack-enabled main>.chapter-shell+.chapter-shell{margin-top:0}.chapter-stack-enabled main>.chapter-shell>section[id]{position:relative;top:auto;border-radius:0;box-shadow:none}}
+/* The globe keeps its original spacing inside its new React-owned shell. */
+.kenny-portfolio main>.chapter-shell>section.world-coverage{height:auto;min-height:100svh;max-height:none;background-color:#050609;padding:120px 6vw 100px}
+.kenny-portfolio .world-coverage .world-heading h2,.kenny-portfolio .world-coverage .world-selected h3{font-family:var(--kenny-geometric);font-weight:800}
+@media(max-width:900px){.kenny-portfolio main>.chapter-shell>section.world-coverage{padding:110px 7vw 100px}}

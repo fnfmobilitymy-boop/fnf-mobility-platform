@@ -9,7 +9,7 @@ manifest=json.loads((ROOT/'assets/build-manifest.json').read_text())
 files=[Path('index.html'),Path('robots.txt'),Path('404.html'),Path('.nojekyll'),Path('kenny-studio-share-20261021.jpg')]
 files += [Path(p.strip('/'))/'index.html' for p in manifest['pages']+manifest.get('utility_pages',[]) if p!='/']
 files += [Path(manifest[k]) for k in ['app','css','runtime','extra_css']]
-files += [p.relative_to(ROOT) for p in (ROOT/'assets/fonts').glob('*.woff2')]
+files += [p.relative_to(ROOT) for p in (ROOT/'assets/fonts').glob('*') if p.is_file()]
 files += [p.relative_to(ROOT) for p in (ROOT/'frames/globe').rglob('*') if p.is_file()]
 for p in (ROOT/'media').rglob('*'):
  if p.is_file() and (p.suffix!='.mp4' or p.stem.endswith('-web') or p.name=='kenny-hero-mask.mp4'):files.append(p.relative_to(ROOT))

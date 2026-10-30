@@ -5,6 +5,7 @@ const KENNY_REFERENCE_MOTION={
   scrollLerp:.09,wheelMultiplier:.9,enterY:68,mobileEnterY:34,exitY:44,
   enterOpacity:.18,exitOpacity:.34,scrub:.4,
   cameraPeak:1.26,mobileCameraPeak:1.10,heroScrollScale:1.08,
+  chapterRadius:30,mobileChapterRadius:20,
   cameraKeys:[0,2,4,6.2,7.8,10.05]
 };
 function kennyAttachReferenceCamera(root,isPaused){
@@ -42,23 +43,26 @@ function ol(e,t,n){
   const scrollRef=y.useRef(null),paused=y.useRef(n);paused.current=n;
   y.useLayoutEffect(()=>{
     const root=e.current;if(!root||t)return;
-    root.classList.add('reference-motion-enabled');
+    root.classList.add('reference-motion-enabled','chapter-stack-enabled');
     const settings=KENNY_REFERENCE_MOTION;
     const lenis=new il({lerp:settings.scrollLerp,wheelMultiplier:settings.wheelMultiplier,smoothWheel:true,syncTouch:false,allowNestedScroll:true,prevent:node=>!!node.closest('dialog, [data-lenis-prevent]')});
     scrollRef.current=lenis;if(paused.current)lenis.stop();
     const update=()=>X.update(),tick=time=>lenis.raf(time*1000);lenis.on('scroll',update);Ii.ticker.add(tick);Ii.ticker.lagSmoothing(0);
     const narrow=matchMedia('(max-width:760px)');
+    const sections=Array.from(root.querySelectorAll('main > .chapter-shell > section[id],main > section[id]'));
+    const measureChapters=()=>{const viewport=innerHeight;root.style.setProperty('--chapter-viewport',viewport+'px');sections.forEach((section,index)=>{section.style.setProperty('--chapter-top',Math.min(0,viewport-section.offsetHeight)+'px');const shell=section.closest('.chapter-shell');shell?.style.setProperty('--chapter-layer',String(index+1));shell?.style.setProperty('--chapter-height',section.offsetHeight+'px')})};measureChapters();
     const ctx=Ii.context(()=>{
-      const sections=Array.from(root.querySelectorAll('main > section[id]'));
       sections.forEach((section,index)=>{
         section.dataset.chapterFlow='reference';
+        const anchor=section.closest('.chapter-shell')||section;
         const copy=Array.from(section.querySelectorAll(al));
-        if(index>0&&copy.length)Ii.fromTo(copy,{y:()=>narrow.matches?settings.mobileEnterY:settings.enterY,opacity:settings.enterOpacity},{y:0,opacity:1,ease:'none',immediateRender:false,scrollTrigger:{trigger:section,start:'top 94%',end:'top 28%',scrub:settings.scrub,invalidateOnRefresh:true}});
-        if(index<sections.length-1&&copy.length)Ii.fromTo(copy,{y:0,opacity:1},{y:()=>-(narrow.matches?24:settings.exitY),opacity:settings.exitOpacity,ease:'none',immediateRender:false,scrollTrigger:{trigger:section,start:'bottom 62%',end:'bottom top',scrub:settings.scrub,invalidateOnRefresh:true}});
+        if(index>0)Ii.fromTo(section,{'--chapter-radius':()=> (narrow.matches?settings.mobileChapterRadius:settings.chapterRadius)+'px'},{'--chapter-radius':'0px',ease:'none',scrollTrigger:{trigger:anchor,start:'top 98%',end:'top 8%',scrub:.35,invalidateOnRefresh:true}});
+        if(index>0&&copy.length)Ii.fromTo(copy,{y:()=>narrow.matches?settings.mobileEnterY:settings.enterY,opacity:settings.enterOpacity},{y:0,opacity:1,ease:'none',immediateRender:false,scrollTrigger:{trigger:anchor,start:'top 92%',end:'top 28%',scrub:settings.scrub,invalidateOnRefresh:true}});
+        // Keep outgoing copy readable while the next chapter covers it.
         const backdrop=section.querySelector(':scope > .scene-backdrop, :scope > .hero-media, :scope > .index-room');
-        if(backdrop)Ii.fromTo(backdrop,{y:0},{y:()=>Math.min(innerHeight*.075,70),ease:'none',immediateRender:false,scrollTrigger:{trigger:section,start:'top top',end:'bottom top',scrub:settings.scrub,invalidateOnRefresh:true}});
+        if(backdrop)Ii.fromTo(backdrop,{y:0},{y:()=>Math.min(innerHeight*.075,70),ease:'none',immediateRender:false,scrollTrigger:{trigger:anchor,start:'top top',end:'bottom top',scrub:settings.scrub,invalidateOnRefresh:true}});
         const scene=section.querySelectorAll('.scene-original,.scene-first-frame,.scene-character-idle');
-        if(scene.length)Ii.fromTo(scene,{scale:()=>narrow.matches?1.035:1.10},{scale:1,transformOrigin:'75% 45%',ease:'none',immediateRender:false,scrollTrigger:{trigger:section,start:'top bottom',end:'top top',scrub:.5,invalidateOnRefresh:true}});
+        if(scene.length)Ii.fromTo(scene,{scale:()=>narrow.matches?1.035:1.10},{scale:1,transformOrigin:'75% 45%',ease:'none',immediateRender:false,scrollTrigger:{trigger:anchor,start:'top bottom',end:'top top',scrub:.5,invalidateOnRefresh:true}});
       });
       const home=root.querySelector('#home'),player=root.querySelector('.kenny-hero-player');
       if(home&&player)Ii.to(player,{scale:()=>narrow.matches?1.025:settings.heroScrollScale,transformOrigin:'78% 42%',ease:'none',scrollTrigger:{trigger:home,start:'top top',end:'bottom top',scrub:.45,invalidateOnRefresh:true}});
@@ -70,11 +74,11 @@ function ol(e,t,n){
     },root);
     const detachCamera=kennyAttachReferenceCamera(root,()=>paused.current);
     let alive=true,resizeFrame=0;
-    const refresh=()=>{lenis.resize();X.refresh()};
-    document.fonts.ready.then(()=>{if(alive)refresh()});window.addEventListener('load',refresh,{once:true});
-    const observer=new ResizeObserver(()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(refresh)}),main=root.querySelector('main');if(main)observer.observe(main);
-    return()=>{alive=false;observer.disconnect();cancelAnimationFrame(resizeFrame);window.removeEventListener('load',refresh);detachCamera();ctx.revert();root.classList.remove('reference-motion-enabled');root.querySelectorAll('[data-chapter-flow]').forEach(node=>node.removeAttribute('data-chapter-flow'));lenis.off('scroll',update);Ii.ticker.remove(tick);lenis.destroy();Ii.ticker.lagSmoothing(500,33);if(scrollRef.current===lenis)scrollRef.current=null};
+    const refresh=()=>{measureChapters();lenis.resize();X.refresh()};
+    document.fonts.ready.then(()=>{if(alive)refresh()});window.addEventListener('load',refresh,{once:true});window.addEventListener('resize',refresh);
+    const observer=new ResizeObserver(()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(refresh)}),main=root.querySelector('main');if(main)observer.observe(main);sections.forEach(section=>observer.observe(section));
+    return()=>{alive=false;observer.disconnect();cancelAnimationFrame(resizeFrame);window.removeEventListener('load',refresh);window.removeEventListener('resize',refresh);detachCamera();ctx.revert();root.classList.remove('reference-motion-enabled','chapter-stack-enabled');root.style.removeProperty('--chapter-viewport');sections.forEach(section=>{section.style.removeProperty('--chapter-top');section.style.removeProperty('--chapter-radius');section.closest('.chapter-shell')?.style.removeProperty('--chapter-layer');section.closest('.chapter-shell')?.style.removeProperty('--chapter-height')});root.querySelectorAll('[data-chapter-flow]').forEach(node=>node.removeAttribute('data-chapter-flow'));lenis.off('scroll',update);Ii.ticker.remove(tick);lenis.destroy();Ii.ticker.lagSmoothing(500,33);if(scrollRef.current===lenis)scrollRef.current=null};
   },[e,t]);
   y.useEffect(()=>{n?scrollRef.current?.stop():scrollRef.current?.start()},[n]);
-  return y.useCallback(id=>{const target=document.getElementById(id);if(!target)return;const lenis=scrollRef.current;if(!lenis||t)target.scrollIntoView({behavior:'instant',block:'start'});else lenis.scrollTo(target,{duration:Math.min(1.35,Math.max(.65,Math.abs(target.getBoundingClientRect().top)/2200)),easing:value=>1-(1-value)**3,force:true,onComplete:()=>X.update()})},[t]);
+  return y.useCallback(id=>{const target=document.getElementById(id);if(!target)return;const lenis=scrollRef.current;if(!lenis||t)target.scrollIntoView({behavior:'instant',block:'start'});else lenis.scrollTo(target.closest('.chapter-shell')||target,{duration:Math.min(1.35,Math.max(.65,Math.abs(target.getBoundingClientRect().top)/2200)),easing:value=>1-(1-value)**3,force:true,onComplete:()=>X.update()})},[t]);
 }

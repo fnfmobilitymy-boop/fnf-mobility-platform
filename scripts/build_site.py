@@ -85,6 +85,11 @@ translations['zh'].update({'Packages & Pricing':'套餐与价格','PRICING':'套
 translations['ms'].update({'Packages & Pricing':'Pakej & Harga','PRICING':'HARGA'})
 helper=''.join('Object.assign(KENNY_TRANSLATIONS.'+lang+','+j(v)+');' for lang,v in translations.items())+'''function kennyServiceLinks(){return y.createElement('nav',{className:'seo-service-links','aria-label':kennyText('All services')},...[['./pricing/','Packages & Pricing'],['./services/','All services'],['./services/website-design/','Website Design'],['./services/google-ads-management/','Google Ads Management'],['./services/seo/','SEO Services']].map(([href,text])=>y.createElement('a',{href,key:href},kennyText(text)+' ↗')))}'''
 replace('function Al(){',helper+'function Al(){')
+# React owns chapter wrappers so language changes and unmount cleanup stay safe.
+replace('return factory(type,props,key)',"const node=factory(type,props,key);return type==='section'&&props?.id?factory('div',{className:'chapter-shell','data-chapter-id':props.id,children:node},key):node")
+replace('return y.createElement(type,props,...children)',"const node=y.createElement(type,props,...children);return type==='section'&&props?.id?y.createElement('div',{className:'chapter-shell','data-chapter-id':props.id,key:props.key},node):node")
+app=app.replace('main > section[id]','main > .chapter-shell > section[id], main > section[id]')
+replace("return y.createElement('section',{id:'coverage'","return kennyElement('section',{id:'coverage'")
 APP=asset('portfolio.js',app)
 # Shared static page behaviour and consent loading. Tracking IDs remain empty by default.
 RUNTIME=asset('site.js',(ROOT/'assets/site-runtime.js').read_text()+'\n'+(ROOT/'source/payments/calculation.js').read_text()+'\n'+(ROOT/'source/payments/payment-runtime.js').read_text()+'\n'+(ROOT/'source/payments/cart-runtime.js').read_text()+'\n'+(ROOT/'source/payments/invoice-runtime.js').read_text())
@@ -117,7 +122,7 @@ def head(path,title,desc,prefix,kind=''):
  data=graph(path,title,kind)
  if data:out+='<script type="application/ld+json">'+j(data)+'</script>'
  out+=favicon+('<link rel="preload" as="font" type="font/woff2" crossorigin href="'+prefix+font_files[0]+'">' if font_files else '')+'<link rel="stylesheet" href="'+prefix+CSS+'"><link rel="stylesheet" href="'+prefix+EXTRA+'">'
- if path=='/':out+='<link rel="stylesheet" href="./frames/globe/globe.css"><link rel="preload" as="image" href="./media/play-first.webp" fetchpriority="high">'
+ if path=='/':out+='<link rel="preload" as="font" href="'+prefix+'assets/fonts/manrope-variable.ttf" type="font/ttf" crossorigin><link rel="stylesheet" href="./frames/globe/globe.css"><link rel="preload" as="image" href="./media/play-first.webp" fetchpriority="high">'
  out+='<script type="application/json" id="site-options">'+j({'tracking':TRACKING,'ui':UI})+'</script><script defer src="'+prefix+RUNTIME+'"></script>'
  if path=='/':out+='<script defer src="./'+APP+'"></script>'
  return out+'</head>'
