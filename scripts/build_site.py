@@ -7,7 +7,9 @@ import os,re,json,hashlib,base64,sys,xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'source/seo'))
 from content import SERVICES,CONTACT,HOME_TITLE,HOME_DESCRIPTION
 from ui import UI
+from cart import render as render_cart
 from ordering import render as render_order
+from payments import render as render_payment
 from pricing import render as render_pricing, PLANS as PRICING_PLANS
 OUT=Path(os.environ.get('OUTPUT_DIR',str(ROOT))).resolve();OUT.mkdir(parents=True,exist_ok=True)
 ORIGIN=os.environ.get('SITE_URL','').strip().rstrip('/')
@@ -85,7 +87,7 @@ helper=''.join('Object.assign(KENNY_TRANSLATIONS.'+lang+','+j(v)+');' for lang,v
 replace('function Al(){',helper+'function Al(){')
 APP=asset('portfolio.js',app)
 # Shared static page behaviour and consent loading. Tracking IDs remain empty by default.
-RUNTIME=asset('site.js',(ROOT/'assets/site-runtime.js').read_text())
+RUNTIME=asset('site.js',(ROOT/'assets/site-runtime.js').read_text()+'\n'+(ROOT/'source/payments/calculation.js').read_text()+'\n'+(ROOT/'source/payments/payment-runtime.js').read_text()+'\n'+(ROOT/'source/payments/cart-runtime.js').read_text()+'\n'+(ROOT/'source/payments/invoice-runtime.js').read_text())
 favicon=re.search(r'<link rel="icon"[^>]*>',legacy)[0]
 def url(path):return ORIGIN+path if ORIGIN else None
 def graph(path,title,kind):
@@ -97,13 +99,13 @@ def graph(path,title,kind):
  if kind=='pricing':
   nodes.append({'@type':'OfferCatalog','name':'Kenny Studio Website Packages','itemListElement':[{'@type':'Offer','name':p['name'][0],'url':url('/pricing/#website-packages'),'priceSpecification':{'@type':'PriceSpecification','minPrice':p['price'],'priceCurrency':'MYR'},'itemOffered':{'@type':'Service','name':p['name'][0],'provider':{'@id':url('/#organization')}}} for p in PRICING_PLANS]})
  if path!='/':
-  labels=[('Home','/'),('Services','/services/')]+([(SERVICES[kind]['type'],path)] if kind in SERVICES else []) if path.startswith('/services') else [('Home','/'),('Packages & Pricing' if kind=='pricing' else 'Start an Order Request' if kind=='order' else 'Privacy',path)]
+  labels=[('Home','/'),('Services','/services/')]+([(SERVICES[kind]['type'],path)] if kind in SERVICES else []) if path.startswith('/services') else [('Home','/'),('Packages & Pricing' if kind=='pricing' else 'Start an Order Request' if kind=='order' else 'Payment Instructions' if kind=='payment' else 'Privacy',path)]
   nodes.append({'@type':'BreadcrumbList','itemListElement':[{'@type':'ListItem','position':i+1,'name':name,'item':url(p)} for i,(name,p) in enumerate(labels)]})
  return {'@context':'https://schema.org','@graph':nodes}
 def head(path,title,desc,prefix,kind=''):
  canonical=url(path) if INDEXABLE else None;image=url('/kenny-studio-share-20261021.jpg') if ORIGIN else None
  out='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#08070d">'
- out+='<title>'+E(title)+'</title><meta name="description" content="'+E(desc,quote=True)+'"><meta name="robots" content="'+('index, follow, max-image-preview:large' if INDEXABLE and path!='/order/' else 'noindex, follow')+'">'
+ out+='<title>'+E(title)+'</title><meta name="description" content="'+E(desc,quote=True)+'"><meta name="robots" content="'+('index, follow, max-image-preview:large' if INDEXABLE and path not in ['/order/','/payment/','/cart/'] else 'noindex, follow')+'">'
  if canonical:out+='<link rel="canonical" href="'+E(canonical)+'">'
  tags={'og:type':'website','og:site_name':'Kenny Studio','og:locale':'en_MY','og:title':title,'og:description':desc}
  if canonical:tags['og:url']=canonical
@@ -157,7 +159,7 @@ def page_body(kind,prefix,lang):
  out+='<section class="service-section service-price-entry"><span class="service-eyebrow">KENNY STUDIO / '+E(u['pricing'])+'</span><h2>'+E(u['pricingTitle'])+'</h2><p>'+E(u['pricingBody'])+'</p><a class="service-button" href="'+href(prefix,'/pricing/')+'">'+E(u['pricing'])+' ↗</a></section>'
  return out+contact(prefix,lang)
 def header(prefix,kind):
- return '<a class="skip-link" href="#service-content">Skip to content</a><header class="service-header"><div class="service-header-inner"><a class="service-brand" href="'+href(prefix,'/')+'"><i aria-hidden="true">K+</i> KENNY STUDIO</a><nav class="service-nav" id="service-navigation" aria-label="Main navigation">'+''.join('<a data-ui="'+k+'" href="'+href(prefix,p)+'"'+(' aria-current="page"' if k==kind else '')+'>'+E(UI['en'][k])+'</a>' for k,p in [('home','/'),('services','/services/'),('website-design','/services/website-design/'),('google-ads-management','/services/google-ads-management/'),('seo','/services/seo/'),('pricing','/pricing/'),('contact','/#project-brief')])+'</nav><div class="service-tools"><label class="sr-only" for="page-language">Website language</label><select id="page-language" aria-label="Website language"><option value="en">English</option><option value="zh">中文</option><option value="ms">Bahasa Melayu</option></select><button class="service-menu" type="button" aria-controls="service-navigation" aria-expanded="false" data-ui="menu">Menu</button></div></div></header>'
+ return '<a class="skip-link" href="#service-content">Skip to content</a><header class="service-header"><div class="service-header-inner"><a class="service-brand" href="'+href(prefix,'/')+'"><i aria-hidden="true">K+</i> KENNY STUDIO</a><nav class="service-nav" id="service-navigation" aria-label="Main navigation">'+''.join('<a data-ui="'+k+'" href="'+href(prefix,p)+'"'+(' aria-current="page"' if k==kind else '')+'>'+E(UI['en'][k])+'</a>' for k,p in [('home','/'),('services','/services/'),('website-design','/services/website-design/'),('google-ads-management','/services/google-ads-management/'),('seo','/services/seo/'),('pricing','/pricing/'),('contact','/#project-brief')])+'</nav><div class="service-tools"><a class="basket-nav" href="'+href(prefix,'/cart/')+'" aria-label="Shopping basket">🛒</a><label class="sr-only" for="page-language">Website language</label><select id="page-language" aria-label="Website language"><option value="en">English</option><option value="zh">中文</option><option value="ms">Bahasa Melayu</option></select><button class="service-menu" type="button" aria-controls="service-navigation" aria-expanded="false" data-ui="menu">Menu</button></div></div></header>'
 def footer(prefix):return '<footer class="service-footer"><span data-ui="copyright">'+UI['en']['copyright']+'</span><div><a data-ui="pricing" href="'+href(prefix,'/pricing/')+'">Packages & Pricing</a><a data-ui="services" href="'+href(prefix,'/services/')+'">Services</a><a data-ui="privacy" href="'+href(prefix,'/privacy/')+'">Privacy & analytics</a><button type="button" class="analytics-settings" data-ui="analytics">Analytics preferences</button></div></footer>'
 for path,(title,desc) in PAGES.items():
  if path=='/':
@@ -174,6 +176,15 @@ path='/order/';prefix='../';title='Start a Website Order Request | Kenny Studio'
 bodies={l:render_order(prefix,l) for l in UI}
 write('order/index.html',head(path,title,desc,prefix,'order')+'<body class="service-page order-page">'+header(prefix,'order')+'<main id="service-content" class="service-main">'+bodies['en']+'</main>'+footer(prefix)+'<script id="page-copy" type="application/json">'+j(bodies)+'</script></body></html>')
 
+path='/cart/';prefix='../';title='Shopping Basket | Kenny Studio';desc='Review a non-binding website package shortlist before quotation confirmation and payment.'
+bodies={l:render_cart(prefix,l) for l in UI}
+write('cart/index.html',head(path,title,desc,prefix,'cart')+'<body class="service-page cart-page">'+header(prefix,'cart')+'<main id="service-content" class="service-main">'+bodies['en']+'</main>'+footer(prefix)+'<script id="page-copy" type="application/json">'+j(bodies)+'</script></body></html>')
+
+# Receiving instructions/calculator is a utility; never indexed or treated as a payment-success endpoint.
+path='/payment/';prefix='../';title='Payment Instructions | Kenny Studio';desc='Review your confirmed quote, payment stage and receiving details. Stripe carries a disclosed 6% service fee; transfers require funds verification.'
+bodies={l:render_payment(prefix,l) for l in UI}
+write('payment/index.html',head(path,title,desc,prefix,'payment')+'<body class="service-page payment-page">'+header(prefix,'payment')+'<main id="service-content" class="service-main">'+bodies['en']+'</main>'+footer(prefix)+'<script id="page-copy" type="application/json">'+j(bodies)+'</script></body></html>')
+
 # An explicit not-found document; it is never listed in the sitemap.
 write('404.html','<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>Page Not Found | Kenny Studio</title></head><body><main><h1>That page could not be found.</h1><p><a href="'+E(url('/') if ORIGIN else '/')+'">Return to Kenny Studio</a></p></main></body></html>')
 ns='http://www.sitemaps.org/schemas/sitemap/0.9';ET.register_namespace('',ns);tree=ET.Element('{'+ns+'}urlset')
@@ -186,5 +197,5 @@ write('robots.txt',robots)
 # Preserve the approved custom-domain binding in the clean Pages release.
 if INDEXABLE and not urlparse(ORIGIN).hostname.endswith('.github.io'):write('CNAME',urlparse(ORIGIN).hostname+'\n')
 elif (OUT/'CNAME').exists():(OUT/'CNAME').unlink()
-write('assets/build-manifest.json',json.dumps({'indexable':INDEXABLE,'origin':ORIGIN or None,'pages':list(PAGES),'utility_pages':['/order/'],'css':CSS,'app':APP,'runtime':RUNTIME,'extra_css':EXTRA},indent=2))
+write('assets/build-manifest.json',json.dumps({'indexable':INDEXABLE,'origin':ORIGIN or None,'pages':list(PAGES),'utility_pages':['/order/','/payment/','/cart/'],'css':CSS,'app':APP,'runtime':RUNTIME,'extra_css':EXTRA},indent=2))
 print('Built',len(PAGES),'static pages; indexable =',INDEXABLE,'; production origin =',ORIGIN or '(unset)')

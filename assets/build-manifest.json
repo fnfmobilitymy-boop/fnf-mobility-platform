@@ -11,10 +11,12 @@
     "/privacy/"
   ],
   "utility_pages": [
-    "/order/"
+    "/order/",
+    "/payment/",
+    "/cart/"
   ],
   "css": "assets/portfolio.082d55ea9a.css",
   "app": "assets/portfolio.e6695d6891.js",
-  "runtime": "assets/site.ae35f6ccf8.js",
-  "extra_css": "assets/services.492a1b8611.css"
+  "runtime": "assets/site.5da8193a72.js",
+  "extra_css": "assets/services.4f1970ed90.css"
 }

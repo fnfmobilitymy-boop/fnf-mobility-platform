@@ -30,9 +30,9 @@ with sync_playwright() as p:
   page.emulate_media(reduced_motion='reduce');page.wait_for_timeout(150);assert page.locator('[data-pricing-video]').evaluate('v=>v.paused')
   page.select_option('#page-language','zh');assert page.locator('[data-pricing-toggle]').get_attribute('aria-pressed')=='true';page.locator('[data-pricing-toggle]').click();assert page.locator('[data-pricing-toggle]').get_attribute('aria-pressed')=='false'
   cta=page.locator('.pricing-packages .service-button').all()
-  assert [parse_qs(urlparse(a.get_attribute('href')).query)['package'][0] for a in cta]==['essential','signature','personal','business','ecommerce']
+  assert [parse_qs(urlparse(a.get_attribute('href')).query)['add'][0] for a in cta]==['essential','signature','personal','business','ecommerce']
   pdf=page.request.get(BASE+'media/kenny-studio-pricing-en-zh.pdf');assert pdf.status==200 and pdf.body().startswith(b'%PDF')
-  page.locator('.pricing-packages .service-button').nth(4).click();page.wait_for_selector('#order-request-form');assert page.locator('[name=package]').input_value()=='ecommerce';page.goto(BASE,wait_until='domcontentloaded');page.wait_for_selector('#kenny-entry-intro',state='detached')
+  page.locator('.pricing-packages .service-button').nth(4).click();page.wait_for_selector('[data-cart-items]');assert 'E-dagang' in page.locator('[data-cart-items]').inner_text() or '电商' in page.locator('[data-cart-items]').inner_text() or 'E-commerce' in page.locator('[data-cart-items]').inner_text();page.goto(BASE,wait_until='domcontentloaded');page.wait_for_selector('#kenny-entry-intro',state='detached')
   assert page.locator('#projects a[href^="https://"]').evaluate_all('els=>new Set(els.map(a=>a.href)).size')==23
   assert page.locator('a[href="./pricing/"]').count()>=2
   assert not errors,errors;assert not bad,bad

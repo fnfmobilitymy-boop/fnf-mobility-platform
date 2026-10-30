@@ -10,7 +10,7 @@ class Parser(HTMLParser):
   if 'id'in a:self.ids.add(a['id'])
   for k in ['href','src']:
    if a.get(k):self.links.append(a[k])
-pages=[ROOT/'index.html',*ROOT.glob('services/**/index.html'),ROOT/'privacy/index.html',ROOT/'pricing/index.html',ROOT/'order/index.html'];bad=[];count=0
+pages=[ROOT/'index.html',*ROOT.glob('services/**/index.html'),ROOT/'privacy/index.html',ROOT/'pricing/index.html',ROOT/'order/index.html',ROOT/'payment/index.html',ROOT/'cart/index.html'];bad=[];count=0
 for file in pages:
  path=file.relative_to(ROOT).as_posix().replace('index.html','');p=Parser(file.read_text())
  for link in p.links:

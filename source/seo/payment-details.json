@@ -1,0 +1,22 @@
+{
+  "bank": {
+    "bank_name": "HONG LEONG BANK",
+    "account_name": "WONG YUAN BAO",
+    "account_number": "27401009500"
+  },
+  "tng": {
+    "account_name": "WONG YUAN BAO",
+    "account_number": "9988001218176"
+  },
+  "usdt": {
+    "network": "TRC20 / Tron",
+    "address": "TDp1jRv52pC1bGqbpkZHmXsMEEWGdgEbNd"
+  },
+  "stripe": {
+    "url": "https://buy.stripe.com/5kQeVe7tj3vC8UceeP3oA04",
+    "fee_basis_points": 600,
+    "amount_mode": "customer_entered",
+    "currency": "MYR",
+    "currency_verified": true
+  }
+}
