@@ -33,8 +33,9 @@ def create_app(settings=None):
   print('Stripe readiness: '+json.dumps(await verify_stripe(cfg),sort_keys=True),flush=True)
   from .sales import verify_provider
   await verify_provider(cfg)
-  from .mail import deliver_loop,verify_smtp
+  from .mail import deliver_loop,verify_smtp,mail_diagnostics
   if os.environ.get('MAIL_VERIFY_ON_START','false')=='true':await asyncio.to_thread(verify_smtp)
+  mail_diagnostics(db)
   if not cfg.test_mode:
    with db.transaction() as c:c.execute("UPDATE outbox SET status='suppressed' WHERE status='queued' AND subject LIKE '%KS-TEST-%'")
   task=None if cfg.test_mode else asyncio.create_task(deliver_loop(db))
