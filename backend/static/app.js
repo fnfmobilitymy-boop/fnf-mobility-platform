@@ -1,4 +1,5 @@
 'use strict';
+if(document.body)document.body.dataset.page=location.pathname==='/admin'?'admin':'customer';
 const $=s=>document.querySelector(s),root=$('#app'),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),rm=c=>'RM'+(c/100).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 let lang=localStorage.getItem('kenny-language')||'en';if(!['en','zh','ms'].includes(lang))lang='en';$('#language').value=lang;
 const availableMethods=()=>state.paymentMethods||['bank','tng','usdt'];
