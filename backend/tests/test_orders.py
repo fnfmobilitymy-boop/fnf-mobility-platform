@@ -93,6 +93,12 @@ class OrdersTest(unittest.TestCase):
   r=self.c.get('/');self.assertEqual(r.status_code,200);self.assertIn('Kenny Studio',r.text)
   for name in ['app.js','style.css','manrope.ttf','payments/stripe.svg']:self.assertEqual(self.c.get('/static/'+name).status_code,200,name)
   r=self.c.post('/api/admin/login',json={'email':self.cfg.admin_email,'password':self.password});self.assertIn('HttpOnly',r.headers['set-cookie']);self.assertIn('SameSite=strict',r.headers['set-cookie']);self.assertEqual(r.headers['x-robots-tag'],'noindex, nofollow')
+ def test_test_mode_never_accepts_real_payments(self):
+  self.cfg.test_mode=True;o=self.new('stripe');self.quote(o,'stripe');data=self.get(o)
+  self.assertIsNone(data['paymentDetails']);self.assertFalse(data['stripeReady']);self.assertTrue(self.c.get('/api/config').json()['testMode'])
+  self.assertEqual(self.c.post('/api/orders/'+o['id']+'/stages/deposit/checkout',headers=o['headers']).status_code,403)
+  self.assertEqual(self.send_event(self.event(o)).status_code,403)
+  pdf=self.c.get('/api/documents/'+data['documents'][0]['id']).content;self.assertTrue(pdf.startswith(b'%PDF'))
  def test_rounding(self):
   for total in range(10000,10100):self.assertEqual(sum(v for v,fee in split_amount(total,'stripe')),total)
 if __name__=='__main__':unittest.main()

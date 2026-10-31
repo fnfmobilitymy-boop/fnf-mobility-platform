@@ -28,12 +28,13 @@ def create_app(settings=None):
  @asynccontextmanager
  async def lifespan(app):
   from .mail import deliver_loop
-  task=asyncio.create_task(deliver_loop(db))
+  task=None if cfg.test_mode else asyncio.create_task(deliver_loop(db))
   try:yield
   finally:
-   task.cancel()
-   try:await task
-   except asyncio.CancelledError:pass
+   if task:
+    task.cancel()
+    try:await task
+    except asyncio.CancelledError:pass
  app=FastAPI(title='Kenny Studio Orders',docs_url=None,redoc_url=None,openapi_url=None,lifespan=lifespan)
  app.add_middleware(BodyLimitMiddleware)
  app.state.cfg=cfg;app.state.db=db
@@ -67,7 +68,7 @@ def create_app(settings=None):
  def emit_document(c,o,s,kind):
   existing=c.execute('SELECT id FROM documents WHERE stage_id=? AND kind=?',(s['id'],kind)).fetchone()
   if existing:return existing[0]
-  ident=secrets.token_hex(16);num=number(c,'RCPT' if kind=='receipt' else 'INV');issued=now();pdf=render_pdf(o,s,kind,num,issued)
+  ident=secrets.token_hex(16);num=number(c,'RCPT' if kind=='receipt' else 'INV');issued=now();pdf=render_pdf({**o,'test_mode':cfg.test_mode},s,kind,num,issued)
   c.execute('INSERT INTO documents(id,order_id,stage_id,kind,number,created,pdf) VALUES(?,?,?,?,?,?,?)',(ident,o['id'],s['id'],kind,num,issued,pdf));return ident
  def notify(c,o,subject,text):
   queue(c,cfg.admin_email,subject,text+'\n\nAdmin: '+cfg.public_url+'/admin')
@@ -88,6 +89,8 @@ def create_app(settings=None):
  async def value_error(req,exc):return JSONResponse({'detail':str(exc)},422)
  @app.get('/api/health')
  def health():return {'status':'ok'}
+ @app.get('/api/config')
+ def config():return {'testMode':cfg.test_mode,'persistent':not cfg.test_mode}
  @app.get('/api/catalogue')
  def get_catalogue(language:Literal['en','zh','ms']='en'):
   from .core import catalogue
@@ -102,14 +105,14 @@ def create_app(settings=None):
    if old:
     if old['payload_hash']!=payload_hash:fail(409,'This submission key already belongs to a different request')
     return {'id':old['id'],'number':old['public_no'],'url':cfg.link(old['id'],old['access_version']),'token':cfg.token(old['id'],old['access_version'])}
-   limit(c,'order:'+str(req.client.host),10,3600);num=number(c,'KS');estimate=sum(p['lineCents'] for p in items)
+   limit(c,'order:'+str(req.client.host),10,3600);num=number(c,'KS-TEST' if cfg.test_mode else 'KS');estimate=sum(p['lineCents'] for p in items)
    c.execute('INSERT INTO orders(id,public_no,created,updated,status,language,name,email,phone,business,requirements,items,estimate,method,idempotency,payload_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(oid,num,now(),now(),'requested',data.language,data.name.strip(),data.email.strip(),data.phone.strip(),data.business.strip(),data.requirements.strip(),json.dumps(items,ensure_ascii=False),estimate,data.method,data.idempotency,payload_hash))
    o=order(c,oid);audit(c,'customer',oid,'order_requested','Request-data processing consent v1 accepted');notify(c,o,'New project request · '+num,'Your project request has been saved. Kenny will review your scope and confirm a quotation before payment.\n\n'+data.requirements)
   return {'id':oid,'number':num,'url':cfg.link(oid),'token':cfg.token(oid)}
  @app.get('/api/orders/{oid}')
  def get_order(oid:str,req:Request):
   with db.connect() as c:
-   o=order(c,oid);access(req,o);o.pop('idempotency');o.pop('payload_hash');o['items']=json.loads(o['items']);o['stages']=[dict(r) for r in c.execute('SELECT * FROM stages WHERE order_id=? ORDER BY rowid',(oid,))];o['receipts']=[dict(r) for r in c.execute('SELECT id,stage_id,created,name,mime,reference,status,note FROM receipts WHERE order_id=? ORDER BY created DESC',(oid,))];o['documents']=[dict(r) for r in c.execute('SELECT id,stage_id,kind,number,created FROM documents WHERE order_id=?',(oid,))];o['paymentDetails']=DETAILS if o['quote'] else None;o['stripeReady']=bool(cfg.stripe_key and cfg.webhook_secret);return o
+   o=order(c,oid);access(req,o);o.pop('idempotency');o.pop('payload_hash');o['items']=json.loads(o['items']);o['stages']=[dict(r) for r in c.execute('SELECT * FROM stages WHERE order_id=? ORDER BY rowid',(oid,))];o['receipts']=[dict(r) for r in c.execute('SELECT id,stage_id,created,name,mime,reference,status,note FROM receipts WHERE order_id=? ORDER BY created DESC',(oid,))];o['documents']=[dict(r) for r in c.execute('SELECT id,stage_id,kind,number,created FROM documents WHERE order_id=?',(oid,))];o['paymentDetails']=DETAILS if o['quote'] and not cfg.test_mode else None;o['stripeReady']=bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret);return o
  @app.post('/api/admin/login')
  def login(data:Login,req:Request):
   with db.transaction() as c:limit(c,'login:'+str(req.client.host),15,900)
@@ -126,7 +129,7 @@ def create_app(settings=None):
   response=JSONResponse({'ok':True});response.delete_cookie('kenny_admin',path='/');return response
  @app.get('/api/admin/orders')
  def list_orders(actor=Depends(admin)):
-  with db.connect() as c:return {'orders':[dict(r) for r in c.execute('SELECT id,public_no,created,updated,status,name,email,estimate,quote,method FROM orders ORDER BY created DESC LIMIT 500')],'mailReady':all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status!='sent'").fetchone()[0]}
+  with db.connect() as c:return {'orders':[dict(r) for r in c.execute('SELECT id,public_no,created,updated,status,name,email,estimate,quote,method FROM orders ORDER BY created DESC LIMIT 500')],'mailReady':not cfg.test_mode and all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status!='sent'").fetchone()[0]}
  @app.post('/api/admin/orders/{oid}/quote')
  def approve_quote(oid:str,data:Quote,actor=Depends(admin)):
   total=money(data.amount);amounts=split_amount(total,data.method)
@@ -203,6 +206,7 @@ def create_app(settings=None):
    access(req,order(c,row['order_id']));return Response(row['pdf'],media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="'+row['number']+'.pdf"'})
  @app.post('/api/orders/{oid}/stages/{phase}/checkout')
  async def checkout(oid:str,phase:str,req:Request):
+  if cfg.test_mode:fail(403,'Test service: real payments are disabled')
   if not cfg.stripe_key or not cfg.webhook_secret:fail(503,'Stripe API and webhook credentials have not been configured. No payment was created.')
   with db.connect() as c:
    o=order(c,oid);customer(req,o);s=c.execute('SELECT * FROM stages WHERE order_id=? AND phase=?',(oid,phase)).fetchone()
@@ -234,6 +238,7 @@ def create_app(settings=None):
   return {'url':url}
  @app.post('/api/stripe/webhook')
  async def stripe_webhook(req:Request):
+  if cfg.test_mode:fail(403,'Test service: live payment webhooks are disabled')
   if not cfg.webhook_secret:fail(503,'Webhook not configured')
   body=await req.body()
   if len(body)>1000000:fail(413,'Payload too large')

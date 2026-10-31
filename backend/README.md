@@ -85,3 +85,7 @@ API integration tests use an in-process ASGI adapter and inline worker execution
 Data are in `/data/orders.sqlite3` (including its SQLite WAL files) and `/data/uploads/`. Take consistent SQLite backups with SQLite's backup API together with the uploaded files; do not copy only the database file while writes are active. Preserve `APP_SECRET` separately in the hosting secret manager. Do not run multiple service replicas against the same SQLite disk.
 
 Quotes/invoices are immutable after approval in this first version. Correct a requested scope before issuing. Refunds, partial/underpayments, a revised issued invoice, multiple currencies and LHDN integration require an explicit workflow; they are not silently auto-approved.
+
+## Isolated free testing service
+
+`APP_TEST_MODE=true` is for a separate temporary test service only. A visible banner marks every screen, real receiving-account details are withheld, live Stripe checkout/webhooks and SMTP delivery are disabled, and generated PDFs are labelled TEST ONLY. The production blueprint does not enable this switch. Tests can upload dummy receipts and exercise owner approval and the 50/30/20 workflow without moving money. The free service uses ephemeral storage; do not put real customer data in it. Its credentials are kept in that service's Render environment, not in Git or public chat.

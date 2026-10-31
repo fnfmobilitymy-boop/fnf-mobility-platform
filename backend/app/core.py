@@ -44,6 +44,7 @@ class Settings:
  admin_email:str=field(default_factory=lambda:os.environ.get('ADMIN_EMAIL','hello@kennystudio.cfd'))
  public_url:str=field(default_factory=lambda:(os.environ.get('PUBLIC_URL') or os.environ.get('RENDER_EXTERNAL_URL') or 'http://127.0.0.1:8188').rstrip('/'))
  origin:str=field(default_factory=lambda:os.environ.get('MAIN_SITE_ORIGIN','https://kennystudio.cfd').rstrip('/'))
+ test_mode:bool=field(default_factory=lambda:os.environ.get('APP_TEST_MODE','false').lower()=='true')
  production:bool=field(default_factory=lambda:os.environ.get('APP_ENV')=='production')
  stripe_key:str=field(default_factory=lambda:os.environ.get('STRIPE_SECRET_KEY',''))
  webhook_secret:str=field(default_factory=lambda:os.environ.get('STRIPE_WEBHOOK_SECRET',''))
