@@ -1,9 +1,10 @@
 from io import BytesIO
+from pathlib import Path
 from datetime import datetime,timezone
 from xml.sax.saxutils import escape
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle
+from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle,Image as PDFImage
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
 pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
@@ -14,7 +15,9 @@ def render_pdf(order,stage,kind,num,issued):
  p=lambda text:Paragraph(escape(str(text)),style)
  amount=lambda value:'RM'+format(value/100,'.2f')
  labels={'deposit':'50% Deposit / 定金','second':'30% Development / 阶段款','balance':'20% Acceptance balance / 验收尾款'}
- story=[Paragraph('KENNY STUDIO',title),p('hello@kennystudio.cfd · kennystudio.cfd'),Spacer(1,18),Paragraph('Payment receipt / 已付款收据' if kind=='receipt' else 'Invoice / 付款账单',title)]
+ logo=Path(__file__).resolve().parents[1]/'static/brand/kenny-wordmark-v1.png'
+ brand=PDFImage(str(logo),width=190,height=35.4,hAlign='LEFT') if logo.exists() else Paragraph('KENNY STUDIO',title)
+ story=[brand,p('hello@kennystudio.cfd · kennystudio.cfd'),Spacer(1,18),Paragraph('Payment receipt / 已付款收据' if kind=='receipt' else 'Invoice / 付款账单',title)]
  if order.get('test_mode'):story.insert(0,Paragraph('TEST ONLY / 测试单据 / NOT A REAL PAYMENT',title))
  for label,value in [('Number / 编号',num),('Issued / 签发',datetime.fromtimestamp(issued,timezone.utc).strftime('%Y-%m-%d UTC')),('Order / 订单',order['public_no']),('Customer / 客户',order['name']),('Email / 邮箱',order['email']),('Stage / 阶段',labels[stage['phase']]),('Method / 方式',stage['method'].upper())]:story.append(p(label+': '+str(value)))
  story.extend([Spacer(1,15),p('Agreed scope / 确认范围'),p(order['scope'])])

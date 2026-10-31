@@ -317,6 +317,8 @@ def create_app(settings=None):
  from .sales import install_sales
  install_sales(app,db,cfg,admin,fail,limit,NewOrder,new_order)
  app.mount('/static',StaticFiles(directory=Path(__file__).resolve().parents[1]/'static'),name='static')
+ @app.get('/favicon.ico')
+ def favicon():return FileResponse(Path(__file__).resolve().parents[1]/'static/brand/favicon-v1.ico',media_type='image/x-icon')
  @app.get('/')
  @app.get('/account')
  @app.get('/admin')
