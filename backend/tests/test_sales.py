@@ -13,6 +13,15 @@ class SalesTest(fixtures.OrdersTest):
  def test_sales_disabled_without_keys(self):
   with patch.dict('os.environ',{'AI_SALES_ENABLED':'true','OPENAI_API_KEY':''}):
    self.assertFalse(self.c.get('/api/sales/config').json()['enabled']);self.assertEqual(self.c.post('/api/sales/sessions',json={'consent':True}).status_code,503)
+ def test_sprite_chat_starts_without_optin_and_does_not_record_false_consent(self):
+  with patch.dict('os.environ',{'AI_SALES_ENABLED':'true','OPENAI_API_KEY':'fixture-not-real'}):
+   r=self.c.post('/api/sales/sessions',json={'language':'zh'});self.assertEqual(r.status_code,200,r.text)
+   s=r.json();self.assertEqual(self.c.get('/api/sales/sessions/'+s['id'],headers={'Authorization':'Bearer '+s['token']}).status_code,200)
+   with self.db.connect() as c:
+    self.assertEqual(c.execute("SELECT count(*) FROM audit WHERE action='sales_ai_consent'").fetchone()[0],0)
+    self.assertEqual(c.execute("SELECT count(*) FROM audit WHERE action='sales_chat_started'").fetchone()[0],1)
+   from app.sales import sales_prompt
+   self.assertIn('website sprite',sales_prompt('zh'));self.assertIn('answer honestly',sales_prompt('zh'))
  def test_sales_private_multilingual_idempotent_standard_close(self):
   with patch.dict('os.environ',{'AI_SALES_ENABLED':'true','AI_STANDARD_SALES_ENABLED':'true','OPENAI_API_KEY':'fixture-not-real'}),patch('app.sales.generate_reply',new_callable=AsyncMock,return_value=self.answer()) as model:
    self.assertNotIn('fixture-not-real',self.c.get('/api/sales/config').text)
