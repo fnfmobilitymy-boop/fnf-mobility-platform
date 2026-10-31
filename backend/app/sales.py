@@ -111,8 +111,11 @@ async def verify_provider(cfg):
   cfg.ai_ready=False;print('AI provider verification: missing key',flush=True);return
  try:
   async with httpx.AsyncClient(timeout=20) as client:
-   r=await client.post('https://api.openai.com/v1/responses',headers={'Authorization':'Bearer '+key},json={'model':os.environ.get('OPENAI_SALES_MODEL','gpt-4.1'),'input':'Reply with OK.','store':False,'max_output_tokens':16})
-  cfg.ai_ready=r.status_code==200 and r.json().get('status')=='completed'
-  print('AI provider verification: '+('ready' if cfg.ai_ready else 'unavailable')+' HTTP '+str(r.status_code),flush=True)
+   r=await client.post('https://api.openai.com/v1/responses',headers={'Authorization':'Bearer '+key},json={'model':os.environ.get('OPENAI_SALES_MODEL','gpt-4.1'),'input':'Return a launch-verification response: reply Ready, reply_language en, empty brief, recommended_plan none, qualified false and needs_custom false. This is not a customer order.','store':False,'max_output_tokens':512,'text':{'format':{'type':'json_schema','name':'kenny_sales_reply','strict':True,'schema':Reply.model_json_schema()}}})
+  result=r.json();cfg.ai_ready=r.status_code==200 and result.get('status')=='completed'
+  if cfg.ai_ready:
+   parts=[part.get('text','') for item in result.get('output',[]) if item.get('type')=='message' for part in item.get('content',[]) if part.get('type')=='output_text']
+   Reply.model_validate_json(''.join(parts))
+  print('AI structured sales verification: '+('ready' if cfg.ai_ready else 'unavailable')+' HTTP '+str(r.status_code),flush=True)
  except (httpx.HTTPError,ValueError):
-  cfg.ai_ready=False;print('AI provider verification: network/provider error',flush=True)
+  cfg.ai_ready=False;print('AI structured sales verification: network/provider/schema error',flush=True)
