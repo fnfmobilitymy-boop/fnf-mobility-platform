@@ -129,7 +129,7 @@ def create_app(settings=None):
   response=JSONResponse({'ok':True});response.delete_cookie('kenny_admin',path='/');return response
  @app.get('/api/admin/orders')
  def list_orders(actor=Depends(admin)):
-  with db.connect() as c:return {'orders':[dict(r) for r in c.execute('SELECT id,public_no,created,updated,status,name,email,estimate,quote,method FROM orders ORDER BY created DESC LIMIT 500')],'mailReady':not cfg.test_mode and all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status!='sent'").fetchone()[0]}
+  with db.connect() as c:return {'orders':[dict(r) for r in c.execute('SELECT o.id,o.public_no,o.created,o.updated,o.status,o.name,o.email,o.estimate,o.quote,o.method,(SELECT count(*) FROM receipts r WHERE r.order_id=o.id AND r.status=?) AS pending_receipts FROM orders o ORDER BY o.created DESC LIMIT 500',('pending',))],'mailReady':not cfg.test_mode and all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status!='sent'").fetchone()[0]}
  @app.post('/api/admin/orders/{oid}/quote')
  def approve_quote(oid:str,data:Quote,actor=Depends(admin)):
   total=money(data.amount);amounts=split_amount(total,data.method)

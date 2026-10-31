@@ -47,8 +47,10 @@ class OrdersTest(unittest.TestCase):
   o=self.new();h=self.quote(o);buf=BytesIO();Image.new('RGB',(32,32),'white').save(buf,format='PNG');png=buf.getvalue();url='/api/orders/'+o['id']+'/stages/deposit/receipt'
   self.assertEqual(self.c.post(url,headers=o['headers'],data={'reference':'BANK-TEST'},files={'file':('bad.png',b'<script>evil</script>','image/png')}).status_code,422)
   r=self.c.post(url,headers=o['headers'],data={'reference':'BANK-TEST'},files={'file':('proof.png',png,'image/png')});self.assertEqual(r.status_code,200,r.text);rid=r.json()['id'];self.assertEqual(r.json()['status'],'pending');self.assertEqual(self.get(o)['stages'][0]['status'],'open');self.assertEqual(len(self.get(o)['documents']),3)
+  self.assertEqual(self.c.get('/api/admin/orders').json()['orders'][0]['pending_receipts'],1)
   review='/api/admin/receipts/'+rid+'/review';self.assertEqual(self.c.post(review,headers=h,json={'approve':True,'note':'Amount and recipient checked','confirmed_received':False}).status_code,422)
   self.assertEqual(self.c.post(review,headers=h,json={'approve':True,'note':'Exact funds confirmed in receiving account','confirmed_received':True}).status_code,200)
+  self.assertEqual(self.c.get('/api/admin/orders').json()['orders'][0]['pending_receipts'],0)
   self.assertEqual(self.get(o)['stages'][0]['status'],'paid');self.assertEqual(len(self.get(o)['documents']),4)
   self.assertEqual(self.c.post(review,headers=h,json={'approve':True,'note':'Repeated payment attempt','confirmed_received':True}).status_code,409)
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/release',headers=h,json={'phase':'second','note':'Customer accepted the development preview'}).status_code,200)
