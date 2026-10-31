@@ -117,3 +117,38 @@ The current revision passes 13 in-process backend integration tests and determin
 ## Production promotion preparation
 
 See `PRODUCTION-LAUNCH.md` for the exact existing-service upgrade and launch sequence. Live mode now requires an actual persistent mount; setting an environment variable alone cannot claim persistence. Stripe is hidden and rejected for new live orders/quotations until both server credentials exist. These promotion guards pass 15 backend integration tests. They are prepared in Git; infrastructure completion and live verification remain required before enabling real orders and publishing the main-site bridge.
+
+## AI sales consultant and owner notifications
+
+The user has authorised automatic closing of the five published standard website packages at their listed prices. Additional scope always requires an owner quotation. The model cannot set prices, call payment verification, change terms, release milestones, or charge a card. A qualified lead must explicitly confirm the displayed fixed scope, current policy and contact details before the server atomically creates the order and 50/30/20 invoices. The deposit alone is released. Exact USDT amounts remain an owner task; choosing USDT submits a quotation request rather than an automatic quotation. Client preferences do not silently add deliverables to the standard contract.
+
+Configure these privately in Render (do not send secret values in chat):
+
+```
+OPENAI_API_KEY=<private new key, never one exposed in chat>
+OPENAI_SALES_MODEL=gpt-4.1
+AI_SALES_ENABLED=true
+AI_STANDARD_SALES_ENABLED=true
+AI_DAILY_REQUEST_LIMIT=50
+```
+
+The Responses API is called only server-side with `store:false`, bounded history/output and strict structured responses. Per-IP/session/global request caps, per-turn idempotency and a busy lease limit duplicate billing. A provider failure returns a real unavailable response, never a fake generated answer or a fake order. Thirty-day inactive chat expiry is disclosed and cleaned up on session creation. No reference URLs are fetched; the AI asks what the visitor likes about a reference rather than claiming to have browsed it.
+
+The widget identifies itself as AI, obtains processing consent, supports multilingual text replies, browser speech synthesis and optional browser speech recognition. Browser voices and microphone support vary. Speech input is reviewed before sending. The API model can reply in other languages; the interface has EN/ZH/MS controls. Voice playback is user-controlled and no audio autoplay is promised.
+
+Owner tools include AI brief/transcript review, automatic Chinese summaries retaining original reference URLs and names, and links to resulting orders. The order sound must be enabled by a user gesture in the open owner page; it cannot ring in a closed browser. Background tabs resynchronise on return.
+
+The owner currently has only ordinary WhatsApp/Business App, not Cloud API. Therefore automatic WhatsApp is NOT active. The UI provides copy-to-WhatsApp summaries. A queued adapter is ready for a future owner-supplied Cloud API account, approved one-body-variable template and private configuration:
+
+```
+WHATSAPP_ACCESS_TOKEN
+WHATSAPP_PHONE_NUMBER_ID
+WHATSAPP_NOTIFY_TO
+WHATSAPP_TEMPLATE_NAME
+WHATSAPP_TEMPLATE_LANGUAGE
+WHATSAPP_API_VERSION
+```
+
+These values must be supplied only after the owner enables the relevant WhatsApp service and agrees its billing. No session cookie scraping or unofficial personal-account automation is used. Provider acceptance is labelled `accepted`, not delivered; delivery callbacks are not implemented. Retry after an ambiguous provider timeout can create a duplicate notification, so the UI does not claim exactly-once delivery. Automatic external notifications remain disabled in test mode.
+
+The public price guide has been updated to include one ordinary first-year domain per website package, first-year basic static hosting for showcase sites, explicit renewal/server-hosting charges, and a versioned project policy with proportionate cancellation settlement and mandatory rights preserved. The 50% deposit clause does not claim absolute forfeiture in every circumstance.

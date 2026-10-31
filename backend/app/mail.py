@@ -18,7 +18,10 @@ def deliver_once(db):
    with db.transaction() as c:c.execute('UPDATE outbox SET attempts=attempts+1,next_attempt=?,error=? WHERE id=?',(now()+min(3600,60*2**row['attempts']),type(exc).__name__,row['id']))
 async def deliver_loop(db):
  while True:
-  try:await asyncio.to_thread(deliver_once,db)
+  try:
+   await asyncio.to_thread(deliver_once,db)
+   from .notifications import deliver_once as deliver_whatsapp
+   await asyncio.to_thread(deliver_whatsapp,db)
   except asyncio.CancelledError:raise
   except Exception:pass
   await asyncio.sleep(30)

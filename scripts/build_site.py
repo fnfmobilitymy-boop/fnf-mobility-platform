@@ -28,7 +28,7 @@ if GTM and not re.fullmatch(r'GTM-[A-Z0-9]+',GTM):raise SystemExit('Invalid GTM 
 if GA and GTM:raise SystemExit('Configure GA4 or GTM, not both, to avoid duplicate measurement.')
 # Preview builds never load optional analytics, even when deployment credentials are present.
 TRACKING={'ga4':GA if INDEXABLE else '', 'gtm':GTM if INDEXABLE else ''}
-PAGES={'/':(HOME_TITLE,HOME_DESCRIPTION),'/services/':('Website Design, Google Ads & SEO Services | Kenny Studio','Explore website design, Google Ads management and SEO services from Kenny Studio in Malaysia. Clear deliverables and project-specific quotes for your business.'),**{f'/services/{k}/':(v['title'],v['description']) for k,v in SERVICES.items()},'/pricing/':('Website Design Packages & Pricing Malaysia | Kenny Studio','Website packages from RM1,000: landing pages, personal brands, business websites and e-commerce. Compare monthly care, add-ons, SEO and Google Ads fees.'),'/privacy/':('Privacy & Analytics Choices | Kenny Studio','How Kenny Studio enquiry forms, local preferences and optional consent-based analytics work. Contact Kenny about your information and privacy choices.')}
+PAGES={'/':(HOME_TITLE,HOME_DESCRIPTION),'/services/':('Website Design, Google Ads & SEO Services | Kenny Studio','Explore website design, Google Ads management and SEO services from Kenny Studio in Malaysia. Clear deliverables and project-specific quotes for your business.'),**{f'/services/{k}/':(v['title'],v['description']) for k,v in SERVICES.items()},'/pricing/':('Website Design Packages & Pricing Malaysia | Kenny Studio','Website packages from RM1,000: landing pages, personal brands, business websites and e-commerce. Compare monthly care, add-ons, SEO and Google Ads fees.'),'/policy/':('Project Policy & Mutual Protection | Kenny Studio','Project terms for scope, deposit cancellation, revisions, delivery, ownership, hosting and mutual protection.'),'/privacy/':('Privacy & Analytics Choices | Kenny Studio','How Kenny Studio enquiry forms, local preferences and optional consent-based analytics work. Contact Kenny about your information and privacy choices.')}
 def j(v):return json.dumps(v,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
 def write(path,text):
  p=OUT/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
@@ -117,7 +117,7 @@ def graph(path,title,kind):
  if kind=='pricing':
   nodes.append({'@type':'OfferCatalog','name':'Kenny Studio Website Packages','itemListElement':[{'@type':'Offer','name':p['name'][0],'url':url('/pricing/#website-packages'),'priceSpecification':{'@type':'PriceSpecification','minPrice':p['price'],'priceCurrency':'MYR'},'itemOffered':{'@type':'Service','name':p['name'][0],'provider':{'@id':url('/#organization')}}} for p in PRICING_PLANS]})
  if path!='/':
-  labels=[('Home','/'),('Services','/services/')]+([(SERVICES[kind]['type'],path)] if kind in SERVICES else []) if path.startswith('/services') else [('Home','/'),('Packages & Pricing' if kind=='pricing' else 'Start an Order Request' if kind=='order' else 'Payment Instructions' if kind=='payment' else 'Privacy',path)]
+  labels=[('Home','/'),('Services','/services/')]+([(SERVICES[kind]['type'],path)] if kind in SERVICES else []) if path.startswith('/services') else [('Home','/'),('Packages & Pricing' if kind=='pricing' else 'Start an Order Request' if kind=='order' else 'Payment Instructions' if kind=='payment' else 'Project Policy' if kind=='policy' else 'Privacy',path)]
   nodes.append({'@type':'BreadcrumbList','itemListElement':[{'@type':'ListItem','position':i+1,'name':name,'item':url(p)} for i,(name,p) in enumerate(labels)]})
  return {'@context':'https://schema.org','@graph':nodes}
 def head(path,title,desc,prefix,kind=''):
@@ -154,6 +154,9 @@ def contact(prefix,lang):
 def page_body(kind,prefix,lang):
  u=UI[lang]
  if kind=='pricing':return render_pricing(prefix,lang)
+ if kind=='policy':
+  from policy import render_policy
+  return render_policy(prefix,lang,True)
  out=crumbs(prefix,kind,lang)
  if kind=='privacy':return out+'<section class="service-section"><span class="service-eyebrow">KENNY STUDIO / PRIVACY</span><h1>'+E(u['privacyTitle'])+'</h1>'+''.join('<p>'+E(p)+'</p>' for p in u['privacyBody'])+'<button type="button" class="analytics-settings">'+E(u['analytics'])+'</button></section>'
  if kind=='services':

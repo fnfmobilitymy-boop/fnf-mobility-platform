@@ -18,3 +18,8 @@ CREATE TABLE IF NOT EXISTS project_tasks(id INTEGER PRIMARY KEY,order_id TEXT NO
 CREATE INDEX IF NOT EXISTS project_notes_order ON project_notes(order_id,id);
 CREATE INDEX IF NOT EXISTS project_tasks_order ON project_tasks(order_id,done);
 CREATE INDEX IF NOT EXISTS receipts_pending ON receipts(status,order_id);
+CREATE TABLE IF NOT EXISTS sales_sessions(id TEXT PRIMARY KEY,created INTEGER NOT NULL,updated INTEGER NOT NULL,language TEXT NOT NULL,brief TEXT NOT NULL,recommendation TEXT NOT NULL DEFAULT 'none',qualified INTEGER NOT NULL DEFAULT 0,custom INTEGER NOT NULL DEFAULT 0,turns INTEGER NOT NULL DEFAULT 0,busy_until INTEGER NOT NULL DEFAULT 0,order_id TEXT REFERENCES orders(id));
+CREATE TABLE IF NOT EXISTS sales_messages(id INTEGER PRIMARY KEY,session_id TEXT NOT NULL REFERENCES sales_sessions(id) ON DELETE CASCADE,role TEXT NOT NULL,content TEXT NOT NULL,created INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS sales_turns(session_id TEXT NOT NULL REFERENCES sales_sessions(id) ON DELETE CASCADE,nonce TEXT NOT NULL,response TEXT NOT NULL,PRIMARY KEY(session_id,nonce));
+CREATE INDEX IF NOT EXISTS sales_messages_session ON sales_messages(session_id,id);
+CREATE TABLE IF NOT EXISTS owner_notifications(id INTEGER PRIMARY KEY,order_id TEXT NOT NULL UNIQUE REFERENCES orders(id),created INTEGER NOT NULL,summary TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,next_attempt INTEGER NOT NULL DEFAULT 0,provider_id TEXT,error TEXT NOT NULL DEFAULT '');

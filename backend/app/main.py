@@ -17,6 +17,7 @@ from .documents import render_pdf
 class Strict(BaseModel):model_config=ConfigDict(extra='forbid')
 class Item(Strict):id:str;qty:int=Field(strict=True)
 class NewOrder(Strict):
+ standard_order:bool=False;policy_version:str=Field(default='',max_length=40)
  items:list[Item];name:str=Field(min_length=1,max_length=120);email:str=Field(min_length=3,max_length=254);phone:str=Field(min_length=3,max_length=40);business:str=Field(default='',max_length=150);requirements:str=Field(min_length=10,max_length=5000);language:Literal['en','zh','ms']='en';method:Literal['bank','tng','usdt','stripe']='bank';consent:Literal[True];idempotency:str=Field(pattern=r'^[a-f0-9]{64}$')
 class Login(Strict):email:str;password:str=Field(max_length=1024)
 class Quote(Strict):version:int;amount:str;scope:str=Field(min_length=10,max_length=5000);method:Literal['bank','tng','usdt','stripe'];usdt:list[str]=Field(default_factory=list,max_length=3)
@@ -27,6 +28,7 @@ def create_app(settings=None):
  cfg=settings or Settings();cfg.validate();db=DB(cfg.data/'orders.sqlite3')
  @asynccontextmanager
  async def lifespan(app):
+  print('Kenny readiness: testMode='+str(cfg.test_mode)+' persistent='+str(cfg.persistent_storage)+' aiKeyConfigured='+str(bool(os.environ.get('OPENAI_API_KEY')))+' aiEnabled='+str(os.environ.get('AI_SALES_ENABLED','false').lower()=='true')+' standardSales='+str(os.environ.get('AI_STANDARD_SALES_ENABLED','false').lower()=='true'),flush=True)
   from .mail import deliver_loop
   task=None if cfg.test_mode else asyncio.create_task(deliver_loop(db))
   try:yield
@@ -100,6 +102,12 @@ def create_app(settings=None):
   if cfg.production and not cfg.test_mode and data.method=='stripe' and not (cfg.stripe_key and cfg.webhook_secret):fail(503,'Stripe is not enabled yet. Please choose a transfer method.')
   if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',data.email):fail(422,'Enter a valid email')
   if not data.name.strip() or not data.requirements.strip():fail(422,'Complete your name and project requirements')
+  if data.standard_order:
+   from pricing import PLANS
+   from policy import VERSION
+   if os.environ.get('AI_STANDARD_SALES_ENABLED','false').lower()!='true':fail(409,'Standard checkout is not enabled yet')
+   if data.policy_version!=VERSION or len(data.items)!=1 or data.items[0].qty!=1 or data.items[0].id not in [p['id'] for p in PLANS]:fail(422,'Confirm one standard website package and the current project policy')
+   if data.method=='usdt':fail(422,'USDT needs Kenny to agree exact stage amounts. Choose bank/TNG or request a custom quotation.')
   payload=data.model_dump();items=validate_items(payload['items'],data.language);payload_hash=digest(json.dumps(payload,sort_keys=True));oid=secrets.token_hex(16)
   with db.transaction() as c:
    old=c.execute('SELECT * FROM orders WHERE idempotency=?',(data.idempotency,)).fetchone()
@@ -109,6 +117,14 @@ def create_app(settings=None):
    limit(c,'order:'+str(req.client.host),10,3600);num=number(c,'KS-TEST' if cfg.test_mode else 'KS');estimate=sum(p['lineCents'] for p in items)
    c.execute('INSERT INTO orders(id,public_no,created,updated,status,language,name,email,phone,business,requirements,items,estimate,method,idempotency,payload_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(oid,num,now(),now(),'requested',data.language,data.name.strip(),data.email.strip(),data.phone.strip(),data.business.strip(),data.requirements.strip(),json.dumps(items,ensure_ascii=False),estimate,data.method,data.idempotency,payload_hash))
    o=order(c,oid);audit(c,'customer',oid,'order_requested','Request-data processing consent v1 accepted');notify(c,o,'New project request · '+num,'Your project request has been saved. Kenny will review your scope and confirm a quotation before payment.\n\n'+data.requirements)
+   from .notifications import queue_owner
+   queue_owner(c,oid,'Kenny Studio / '+num+' | '+data.name+' | '+data.email+' | '+data.phone+' | '+data.business+' | '+data.requirements+' | Admin: '+cfg.public_url+'/admin')
+   if data.standard_order:
+    from pricing import PLANS,T
+    selected=next(p for p in PLANS if p['id']==data.items[0].id)
+    scope=T(selected['name'],data.language)+'\n'+'\n'.join(T(x,data.language) for x in selected['items'])+'\n'+T(('Only the published standard scope is included. Preferences do not add deliverables. Custom features, premium domain extras, renewals, server/platform fees and care are separate. Scheduling is confirmed in writing before work starts.','仅包含以上标准范围，偏好描述不增加交付内容。定制功能、特别域名差额、续费、服务器／平台费用与维护另列；开工前书面确认排期。','Hanya skop standard di atas termasuk. Keutamaan tidak menambah hasil kerja. Fungsi tersuai, domain premium, pembaharuan, pelayan/platform dan penjagaan berasingan. Jadual disahkan bertulis sebelum bermula。'),data.language)
+    issue_quote(c,oid,Quote(version=1,amount=str(selected['price']),scope=scope,method=data.method), 'ai-standard-checkout')
+    audit(c,'customer',oid,'standard_scope_and_policy_accepted',data.policy_version+': '+selected['id'])
   return {'id':oid,'number':num,'url':cfg.link(oid),'token':cfg.token(oid)}
  @app.get('/api/orders/{oid}')
  def get_order(oid:str,req:Request):
@@ -131,18 +147,19 @@ def create_app(settings=None):
  @app.get('/api/admin/orders')
  def list_orders(actor=Depends(admin)):
   with db.connect() as c:return {'orders':[dict(r) for r in c.execute('SELECT o.id,o.public_no,o.created,o.updated,o.status,o.name,o.email,o.estimate,o.quote,o.method,(SELECT count(*) FROM receipts r WHERE r.order_id=o.id AND r.status=?) AS pending_receipts FROM orders o ORDER BY o.created DESC LIMIT 500',('pending',))],'mailReady':not cfg.test_mode and all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status!='sent'").fetchone()[0]}
- @app.post('/api/admin/orders/{oid}/quote')
- def approve_quote(oid:str,data:Quote,actor=Depends(admin)):
+ def issue_quote(c,oid,data,actor):
   if cfg.production and not cfg.test_mode and data.method=='stripe' and not (cfg.stripe_key and cfg.webhook_secret):fail(503,'Configure Stripe API and webhook credentials before issuing a Stripe quotation.')
   total=money(data.amount);amounts=split_amount(total,data.method)
   if data.method=='usdt' and (len(data.usdt)!=3 or any(not re.fullmatch(r'\d{1,10}(?:\.\d{1,6})?',v) or float(v)<=0 for v in data.usdt)):fail(422,'Confirm three exact USDT stage amounts (TRC20), not a guessed exchange rate')
-  with db.transaction() as c:
-   o=order(c,oid)
-   if o['status']!='requested' or o['version']!=data.version:fail(409,'Order changed or quotation already issued. Refresh before continuing')
-   c.execute('UPDATE orders SET quote=?,scope=?,method=?,status=?,updated=?,version=version+1 WHERE id=?',(total,data.scope,data.method,'quoted',now(),oid));o=order(c,oid)
-   for index,(phase,(base,fee)) in enumerate(zip(PHASES,amounts)):
-    sid=secrets.token_hex(16);c.execute('INSERT INTO stages(id,order_id,phase,base,fee,total,method,status,released,usdt) VALUES(?,?,?,?,?,?,?,?,?,?)',(sid,oid,phase,base,fee,base+fee,data.method,'open' if index==0 else 'locked',now() if index==0 else None,data.usdt[index] if data.method=='usdt' else None));s=dict(c.execute('SELECT * FROM stages WHERE id=?',(sid,)).fetchone());emit_document(c,o,s,'invoice')
-   audit(c,actor,oid,'quote_approved',data.scope);notify(c,o,'Quotation ready · '+o['public_no'],'Kenny has confirmed your project scope. Review your three-stage invoices; only the 50% deposit is currently open.\n\nScope:\n'+data.scope)
+  o=order(c,oid)
+  if o['status']!='requested' or o['version']!=data.version:fail(409,'Order changed or quotation already issued. Refresh before continuing')
+  c.execute('UPDATE orders SET quote=?,scope=?,method=?,status=?,updated=?,version=version+1 WHERE id=?',(total,data.scope,data.method,'quoted',now(),oid));o=order(c,oid)
+  for index,(phase,(base,fee)) in enumerate(zip(PHASES,amounts)):
+   sid=secrets.token_hex(16);c.execute('INSERT INTO stages(id,order_id,phase,base,fee,total,method,status,released,usdt) VALUES(?,?,?,?,?,?,?,?,?,?)',(sid,oid,phase,base,fee,base+fee,data.method,'open' if index==0 else 'locked',now() if index==0 else None,data.usdt[index] if data.method=='usdt' else None));s=dict(c.execute('SELECT * FROM stages WHERE id=?',(sid,)).fetchone());emit_document(c,o,s,'invoice')
+  audit(c,actor,oid,'quote_approved',data.scope);notify(c,o,'Quotation ready · '+o['public_no'],'Kenny has confirmed your project scope. Review your three-stage invoices; only the 50% deposit is currently open.\n\nScope:\n'+data.scope)
+ @app.post('/api/admin/orders/{oid}/quote')
+ def approve_quote(oid:str,data:Quote,actor=Depends(admin)):
+  with db.transaction() as c:issue_quote(c,oid,data,actor)
   return {'ok':True}
  @app.post('/api/admin/orders/{oid}/release')
  def release(oid:str,data:Release,actor=Depends(admin)):
@@ -277,6 +294,8 @@ def create_app(settings=None):
   with db.connect() as c:return {'messages':[dict(r) for r in c.execute('SELECT id,created,recipient,subject,status,attempts,error FROM outbox ORDER BY id DESC LIMIT 100')]}
  from .admin_tools import install_admin_tools
  install_admin_tools(app,db,cfg,admin,order,fail)
+ from .sales import install_sales
+ install_sales(app,db,cfg,admin,fail,limit,NewOrder,new_order)
  app.mount('/static',StaticFiles(directory=Path(__file__).resolve().parents[1]/'static'),name='static')
  @app.get('/')
  @app.get('/admin')

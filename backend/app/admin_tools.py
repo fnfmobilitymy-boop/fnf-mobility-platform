@@ -48,11 +48,14 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
    clients=[dict(r) for r in c.execute('SELECT lower(email) email,count(*) orders,coalesce(sum(quote),0) contract_value,max(created) last_order FROM orders GROUP BY lower(email) ORDER BY last_order DESC LIMIT 500')]
    for client in clients:
     latest=c.execute('SELECT name,phone,business FROM orders WHERE lower(email)=? ORDER BY created DESC LIMIT 1',(client['email'],)).fetchone();client.update(dict(latest))
+   sales=[dict(r) for r in c.execute('SELECT id,updated,language,turns,brief,recommendation,qualified,custom,order_id FROM sales_sessions ORDER BY updated DESC LIMIT 100')]
+   from .notifications import whatsapp_ready
+   notification_status={'whatsappReady':whatsapp_ready(),'whatsappQueued':c.execute("SELECT count(*) FROM owner_notifications WHERE status='queued'").fetchone()[0]}
    counts={r['status']:r['n'] for r in c.execute('SELECT status,count(*) n FROM orders GROUP BY status')}
    counts['pending_receipts']=c.execute("SELECT count(*) FROM receipts WHERE status='pending'").fetchone()[0]
    counts['open_tasks']=c.execute('SELECT count(*) FROM project_tasks WHERE done=0').fetchone()[0]
    counts['overdue_tasks']=c.execute("SELECT count(*) FROM project_tasks WHERE done=0 AND due_date!='' AND due_date<?",(local_today(),)).fetchone()[0]
-   return {'finance':finance,'counts':counts,'receipts':receipts,'tasks':tasks,'projects':projects,'clients':clients,'today':local_today(),'testMode':cfg.test_mode,'listLimit':500}
+   return {'finance':finance,'sales':sales,'notifications':notification_status,'counts':counts,'receipts':receipts,'tasks':tasks,'projects':projects,'clients':clients,'today':local_today(),'testMode':cfg.test_mode,'listLimit':500}
 
  @app.get('/api/admin/orders/{oid}/workspace')
  def workspace(oid:str,actor=Depends(admin)):
@@ -101,7 +104,7 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
   try:
    with db.connect() as c,zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED) as archive:
     c.execute('BEGIN');records={}
-    for table in ['orders','stages','receipts','documents','project_plans','project_notes','project_tasks','audit']:
+    for table in ['orders','stages','receipts','documents','project_plans','project_notes','project_tasks','sales_sessions','sales_messages','owner_notifications','audit']:
      records[table]=[{k:v for k,v in dict(r).items() if k not in ['pdf','path','idempotency','payload_hash']} for r in c.execute('SELECT * FROM '+table)]
     for r in c.execute('SELECT id,path FROM receipts'):
      receipt=Path(r['path'])
