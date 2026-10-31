@@ -32,7 +32,7 @@ Render supports specifying the branch in this repository URL: https://render.com
 5. Render runs the Dockerfile and `/api/health` health check. `RENDER_EXTERNAL_URL` supplies the actual HTTPS origin automatically. If you later use a custom domain, set `PUBLIC_URL` to that HTTPS origin.
 6. Open the Render URL for customer requests, and `<Render URL>/admin` for your dashboard. A fresh database starts empty; no fake orders or testimonials are seeded.
 
-This project has **not** been deployed into your Render account by the assistant. Account access and real payment/mail credentials are still required. The GitHub Pages production site is not automatically redirected to an unverified server.
+The production persistent-storage blueprint has **not** been deployed. A separate free testing service is live at https://kenny-studio-orders-test.onrender.com with APP_TEST_MODE=true. It does not accept real payments or send mail and its data are ephemeral. The GitHub Pages production site is not redirected to the test server.
 
 ## Enable Stripe after the server is live
 
@@ -89,3 +89,8 @@ Quotes/invoices are immutable after approval in this first version. Correct a re
 ## Isolated free testing service
 
 `APP_TEST_MODE=true` is for a separate temporary test service only. A visible banner marks every screen, real receiving-account details are withheld, live Stripe checkout/webhooks and SMTP delivery are disabled, and generated PDFs are labelled TEST ONLY. The production blueprint does not enable this switch. Tests can upload dummy receipts and exercise owner approval and the 50/30/20 workflow without moving money. The free service uses ephemeral storage; do not put real customer data in it. Its credentials are kept in that service's Render environment, not in Git or public chat.
+
+
+Testing owner login: https://kenny-studio-orders-test.onrender.com/admin . Email is `hello@kennystudio.cfd`. The generated password is stored only in the test service Render Environment as `ADMIN_PASSWORD`; inspect or replace it there. Never copy it into Git or public chat.
+
+Local browser verification completed at 1440px and 390px: EN/ZH/MS request forms, real local order persistence, owner login/quotation, three dummy receipt uploads and approvals, sequential milestone releases, and six downloadable invoice/receipt PDFs. These tests use a separate temporary local database and never charge money. Render reports the isolated test deployment Live and its startup logs show HTTP GET / returning 200; direct external HTTP verification from this execution workspace is blocked by its proxy.

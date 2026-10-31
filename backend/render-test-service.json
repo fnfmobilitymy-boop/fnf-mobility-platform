@@ -1,0 +1,12 @@
+{
+  "workspaceId": "tea-dbi4c3afngtc73c8shag",
+  "serviceId": "srv-dbipjrlg1s2s73dtcq7g",
+  "name": "kenny-studio-orders-test",
+  "url": "https://kenny-studio-orders-test.onrender.com",
+  "dashboardUrl": "https://dashboard.render.com/web/srv-dbipjrlg1s2s73dtcq7g",
+  "deployId": "dep-dbipjs5g1s2s73dtcrcg",
+  "deployedCommit": "fdb5cca0689a0929681485d6845d2726473b318c",
+  "plan": "free",
+  "testMode": true,
+  "persistentStorage": false
+}
