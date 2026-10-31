@@ -9,7 +9,7 @@ class SalesTest(fixtures.OrdersTest):
  def start(self):
   r=self.c.post('/api/sales/sessions',json={'language':'zh','consent':True});self.assertEqual(r.status_code,200,r.text);s=r.json();s['headers']={'Authorization':'Bearer '+s['token']};return s
  def send(self,s,nonce=None):return self.c.post('/api/sales/sessions/'+s['id']+'/message',headers=s['headers'],json={'text':'I need an English training centre landing page, budget RM1000, no custom features.','nonce':nonce or secrets.token_hex(16)})
- def checkout(self,s,**extra):return self.c.post('/api/sales/sessions/'+s['id']+'/order',headers=s['headers'],json={'name':'QA AI CUSTOMER','email':'ai@example.invalid','phone':'+60123456789','business':'QA TRAINING','method':'bank','accept_standard':True,'consent':True,'policy_version':VERSION,**extra})
+ def checkout(self,s,**extra):return self.c.post('/api/sales/sessions/'+s['id']+'/order',headers=s['headers'],json={'name':'QA AI CUSTOMER','email':'qa@example.invalid','phone':'+60123456789','business':'QA TRAINING','method':'bank','accept_standard':True,'consent':True,'policy_version':VERSION,**extra})
  def test_sales_disabled_without_keys(self):
   with patch.dict('os.environ',{'AI_SALES_ENABLED':'true','OPENAI_API_KEY':''}):
    self.assertFalse(self.c.get('/api/sales/config').json()['enabled']);self.assertEqual(self.c.post('/api/sales/sessions',json={'consent':True}).status_code,503)

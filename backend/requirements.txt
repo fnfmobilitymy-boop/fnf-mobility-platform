@@ -5,3 +5,4 @@ python-multipart==0.0.32
 reportlab==4.4.9
 Pillow==12.3.0
 httpx==0.28.1
+google-auth[cryptography]==2.62.0

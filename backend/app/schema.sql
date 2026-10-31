@@ -23,3 +23,10 @@ CREATE TABLE IF NOT EXISTS sales_messages(id INTEGER PRIMARY KEY,session_id TEXT
 CREATE TABLE IF NOT EXISTS sales_turns(session_id TEXT NOT NULL REFERENCES sales_sessions(id) ON DELETE CASCADE,nonce TEXT NOT NULL,response TEXT NOT NULL,PRIMARY KEY(session_id,nonce));
 CREATE INDEX IF NOT EXISTS sales_messages_session ON sales_messages(session_id,id);
 CREATE TABLE IF NOT EXISTS owner_notifications(id INTEGER PRIMARY KEY,order_id TEXT NOT NULL UNIQUE REFERENCES orders(id),created INTEGER NOT NULL,summary TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,next_attempt INTEGER NOT NULL DEFAULT 0,provider_id TEXT,error TEXT NOT NULL DEFAULT '');
+
+CREATE TABLE IF NOT EXISTS customers(id TEXT PRIMARY KEY,email TEXT NOT NULL UNIQUE,name TEXT NOT NULL,password_hash TEXT,verified INTEGER NOT NULL DEFAULT 0,google_sub TEXT UNIQUE,created INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS customer_sessions(token_hash TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(id),expires INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS customer_orders(order_id TEXT PRIMARY KEY REFERENCES orders(id),customer_id TEXT NOT NULL REFERENCES customers(id),created INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS customer_orders_owner ON customer_orders(customer_id);
+CREATE TABLE IF NOT EXISTS account_challenges(id TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(id),kind TEXT NOT NULL,code_hash TEXT NOT NULL,expires INTEGER NOT NULL,created INTEGER NOT NULL,attempts INTEGER NOT NULL,used INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS google_flows(state_hash TEXT PRIMARY KEY,nonce TEXT NOT NULL,verifier TEXT NOT NULL,created INTEGER NOT NULL,session_binding TEXT NOT NULL);

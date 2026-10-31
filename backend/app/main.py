@@ -43,7 +43,7 @@ def create_app(settings=None):
  app.add_middleware(BodyLimitMiddleware)
  app.state.cfg=cfg;app.state.db=db
  with db.transaction() as c:c.execute('DELETE FROM sessions')
- app.add_middleware(CORSMiddleware,allow_origins=[cfg.origin,cfg.public_url],allow_methods=['GET','POST'],allow_headers=['Authorization','Content-Type','X-CSRF-Token'],allow_credentials=False)
+ app.add_middleware(CORSMiddleware,allow_origins=[cfg.origin,cfg.public_url],allow_methods=['GET','POST'],allow_headers=['Authorization','Content-Type','X-CSRF-Token','X-Customer-CSRF'],allow_credentials=False)
  def fail(code,message):raise HTTPException(code,message)
  def order(c,oid):
   row=c.execute('SELECT * FROM orders WHERE id=?',(oid,)).fetchone()
@@ -61,6 +61,11 @@ def create_app(settings=None):
    if not hmac.compare_digest(req.headers.get('x-csrf-token',''),cfg.csrf(raw)):fail(403,'Refresh your session and try again')
   return cfg.admin_email
  def customer(req,record):
+  with db.connect() as c:linked=c.execute('SELECT customer_id FROM customer_orders WHERE order_id=?',(record['id'],)).fetchone()
+  if linked:
+   account=customer_account(req,mutation=req.method not in ('GET','HEAD'))
+   if account['id']!=linked['customer_id']:fail(404,'Order not found')
+   return
   expected=cfg.token(record['id'],record['access_version']);actual=req.headers.get('authorization','').removeprefix('Bearer ')
   if not hmac.compare_digest(expected,actual):fail(404,'Order not found or private link invalid')
  def access(req,record):
@@ -69,6 +74,8 @@ def create_app(settings=None):
   c.execute('DELETE FROM limits WHERE created<?',(now()-86400,))
   if c.execute('SELECT count(*) FROM limits WHERE key=? AND created>?',(key,now()-seconds)).fetchone()[0]>=maximum:fail(429,'Too many attempts. Please try later')
   c.execute('INSERT INTO limits VALUES(?,?)',(key,now()))
+ from .accounts import install_accounts
+ customer_account=install_accounts(app,db,cfg,limit)
  def emit_document(c,o,s,kind):
   existing=c.execute('SELECT id FROM documents WHERE stage_id=? AND kind=?',(s['id'],kind)).fetchone()
   if existing:return existing[0]
@@ -101,6 +108,8 @@ def create_app(settings=None):
   return {'items':catalogue(language),'currency':'MYR','stripeFeePercent':6}
  @app.post('/api/orders',status_code=201)
  def new_order(data:NewOrder,req:Request):
+  account=customer_account(req,mutation=True)
+  if data.email.strip().lower()!=account['email']:fail(422,'Use your signed-in account email for this order')
   if cfg.production and not cfg.test_mode and data.method=='stripe' and not (cfg.stripe_key and cfg.webhook_secret):fail(503,'Stripe is not enabled yet. Please choose a transfer method.')
   if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',data.email):fail(422,'Enter a valid email')
   if not data.name.strip() or not data.requirements.strip():fail(422,'Complete your name and project requirements')
@@ -114,10 +123,13 @@ def create_app(settings=None):
   with db.transaction() as c:
    old=c.execute('SELECT * FROM orders WHERE idempotency=?',(data.idempotency,)).fetchone()
    if old:
+    owner=c.execute('SELECT customer_id FROM customer_orders WHERE order_id=?',(old['id'],)).fetchone()
+    if not owner or owner['customer_id']!=account['id']:fail(409,'Submission key unavailable')
     if old['payload_hash']!=payload_hash:fail(409,'This submission key already belongs to a different request')
     return {'id':old['id'],'number':old['public_no'],'url':cfg.link(old['id'],old['access_version']),'token':cfg.token(old['id'],old['access_version'])}
    limit(c,'order:'+str(req.client.host),10,3600);num=number(c,'KS-TEST' if cfg.test_mode else 'KS');estimate=sum(p['lineCents'] for p in items)
    c.execute('INSERT INTO orders(id,public_no,created,updated,status,language,name,email,phone,business,requirements,items,estimate,method,idempotency,payload_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(oid,num,now(),now(),'requested',data.language,data.name.strip(),data.email.strip(),data.phone.strip(),data.business.strip(),data.requirements.strip(),json.dumps(items,ensure_ascii=False),estimate,data.method,data.idempotency,payload_hash))
+   c.execute('INSERT INTO customer_orders VALUES(?,?,?)',(oid,account['id'],now()))
    o=order(c,oid);audit(c,'customer',oid,'order_requested','Request-data processing consent v1 accepted');notify(c,o,'New project request · '+num,'Your project request has been saved. Kenny will review your scope and confirm a quotation before payment.\n\n'+data.requirements)
    from .notifications import queue_owner
    queue_owner(c,oid,'Kenny Studio / '+num+' | '+data.name+' | '+data.email+' | '+data.phone+' | '+data.business+' | '+data.requirements+' | Admin: '+cfg.public_url+'/admin')
@@ -300,6 +312,8 @@ def create_app(settings=None):
  install_sales(app,db,cfg,admin,fail,limit,NewOrder,new_order)
  app.mount('/static',StaticFiles(directory=Path(__file__).resolve().parents[1]/'static'),name='static')
  @app.get('/')
+ @app.get('/account')
+ @app.get('/account/google-complete')
  @app.get('/admin')
  @app.get('/order/{oid}')
  def shell():return FileResponse(Path(__file__).resolve().parents[1]/'static/index.html')

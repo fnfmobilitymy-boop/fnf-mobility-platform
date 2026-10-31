@@ -17,12 +17,22 @@ class TestClient:
  def close(self):self.runner.run(self.client.aclose());self.runner.close()
 class OrdersTest(unittest.TestCase):
  def setUp(self):
-  self.patch=patch('anyio.to_thread.run_sync',inline_worker);self.patch.start();self.tmp=tempfile.TemporaryDirectory();self.password=secrets.token_urlsafe(20);self.cfg=Settings(data=Path(self.tmp.name),secret=secrets.token_urlsafe(40),admin_hash=pw_hash(self.password),public_url='http://testserver',stripe_key='sk_test_fixture',webhook_secret='whsec_fixture');self.app=create_app(self.cfg);self.c=TestClient(self.app);self.db=self.app.state.db
+  self.patch=patch('anyio.to_thread.run_sync',inline_worker);self.patch.start();self.tmp=tempfile.TemporaryDirectory();self.password=secrets.token_urlsafe(20);self.cfg=Settings(data=Path(self.tmp.name),secret=secrets.token_urlsafe(40),admin_hash=pw_hash(self.password),public_url='http://testserver',stripe_key='sk_test_fixture',webhook_secret='whsec_fixture');self.app=create_app(self.cfg);self.c=TestClient(self.app);self.db=self.app.state.db;self.customer_login()
  def tearDown(self):self.c.close();self.tmp.cleanup();self.patch.stop()
+ def customer_login(self):
+  from app.core import digest
+  token=secrets.token_urlsafe(40)
+  with self.db.transaction() as c:
+   c.execute("INSERT OR IGNORE INTO customers VALUES('fixture','qa@example.invalid','QA',NULL,1,NULL,?)",(now(),));c.execute('INSERT INTO customer_sessions VALUES(?,?,?)',(digest(token),'fixture',now()+3600))
+  self.c.cookies.set('kenny_customer',token);self.c.client.headers['X-Customer-CSRF']=hmac.new(self.cfg.secret.encode(),('customer-csrf:'+token).encode(),hashlib.sha256).hexdigest()
  def new(self,method='bank',extra=None):
+  self.customer_login()
   data={'items':[{'id':'essential','qty':1}],'name':'Client 测试','email':'qa@example.invalid','phone':'+60123456789','business':'Training centre','requirements':'Business website with gallery and enquiry form.','method':method,'language':'zh','consent':True,'idempotency':secrets.token_hex(32)}
   if extra:data.update(extra)
-  r=self.c.post('/api/orders',json=data);self.assertEqual(r.status_code,201,r.text);o=r.json();o['payload']=data;o['headers']={'Authorization':'Bearer '+o['token']};return o
+  r=self.c.post('/api/orders',json=data);self.assertEqual(r.status_code,201,r.text);o=r.json()
+  # Baseline suite continues covering pre-account private links; account tests keep ownership links.
+  with self.db.transaction() as c:c.execute('DELETE FROM customer_orders WHERE order_id=?',(o['id'],))
+  o['payload']=data;o['headers']={'Authorization':'Bearer '+o['token']};return o
  def owner(self):
   r=self.c.post('/api/admin/login',json={'email':self.cfg.admin_email,'password':self.password});self.assertEqual(r.status_code,200,r.text);return {'X-CSRF-Token':r.json()['csrf']}
  def quote(self,o,method='bank'):
@@ -33,7 +43,7 @@ class OrdersTest(unittest.TestCase):
   o=self.new(extra={'items':[{'id':'essential','qty':1},{'id':'addon-6','qty':2},{'id':'addon-8','qty':5}]});self.assertEqual(self.get(o)['estimate'],190000)
   self.assertEqual(self.c.get('/api/orders/'+o['id']).status_code,404)
   r=self.c.post('/api/orders',json={**o['payload'],'amount':'0.01'});self.assertEqual(r.status_code,422)
-  self.assertEqual(self.c.post('/api/orders',json=o['payload']).json()['id'],o['id'])
+  self.assertEqual(self.c.post('/api/orders',json=o['payload']).status_code,409)
   self.assertEqual(self.c.get('/api/admin/orders').status_code,401)
  def test_quote_csrf_docs_and_stage_locks(self):
   o=self.new();h=self.owner();body={'version':1,'amount':'1000.01','scope':'A confirmed business website with agreed scope.','method':'bank'}
