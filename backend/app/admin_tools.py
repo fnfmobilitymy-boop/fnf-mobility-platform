@@ -11,6 +11,7 @@ from typing import Literal
 from .core import now
 from .db import audit
 from .countries import order_country,order_overview
+from .revenue import revenue_report
 
 class ToolInput(BaseModel):model_config=ConfigDict(extra='forbid')
 class ProjectPlan(ToolInput):
@@ -56,7 +57,7 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
    counts['pending_receipts']=c.execute("SELECT count(*) FROM receipts WHERE status='pending'").fetchone()[0]
    counts['open_tasks']=c.execute('SELECT count(*) FROM project_tasks WHERE done=0').fetchone()[0]
    counts['overdue_tasks']=c.execute("SELECT count(*) FROM project_tasks WHERE done=0 AND due_date!='' AND due_date<?",(local_today(),)).fetchone()[0]
-   return {'finance':finance,'sales':sales,'notifications':notification_status,'counts':counts,'receipts':receipts,'tasks':tasks,'projects':projects,'clients':clients,'today':local_today(),'testMode':cfg.test_mode,'listLimit':500}
+   return {'revenue':revenue_report(c,now()),'finance':finance,'sales':sales,'notifications':notification_status,'counts':counts,'receipts':receipts,'tasks':tasks,'projects':projects,'clients':clients,'today':local_today(),'testMode':cfg.test_mode,'listLimit':500}
 
  @app.get('/api/admin/orders/{oid}/workspace')
  def workspace(oid:str,actor=Depends(admin)):

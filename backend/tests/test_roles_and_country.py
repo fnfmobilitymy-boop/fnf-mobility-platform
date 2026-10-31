@@ -37,6 +37,8 @@ class RolesCountryTest(fixtures.OrdersTest):
   event=self.event(o);event['data']['object']['customer_details']={'address':{'country':'SG'}};self.assertEqual(self.send_event(event).status_code,200)
   row=self.c.get('/api/admin/orders').json()['orders'][0];self.assertEqual(row['payment_status'],'partial');self.assertEqual(row['paid_project_value'],50001);self.assertEqual(row['amount_due'],0);self.assertEqual((row['country_code'],row['country_source']),('SG','stripe_billing'))
   self.assertEqual(self.c.get('/api/account/session').json()['country'],'US')
+  report=self.c.get('/api/admin/tools').json()['revenue'];self.assertEqual(report['lifetime']['revenue'],50001);self.assertEqual(report['lifetime']['customer_fees'],3000);self.assertEqual(report['lifetime']['payments'],1)
+  self.assertEqual(self.send_event(event).status_code,200);self.assertEqual(self.c.get('/api/admin/tools').json()['revenue']['lifetime']['payments'],1)
   exported=self.c.get('/api/admin/export/orders.csv').text;self.assertIn('Country source',exported);self.assertIn('stripe_billing',exported)
 
 for name in list(fixtures.OrdersTest.__dict__):
