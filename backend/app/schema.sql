@@ -30,3 +30,5 @@ CREATE TABLE IF NOT EXISTS customer_orders(order_id TEXT PRIMARY KEY REFERENCES 
 CREATE INDEX IF NOT EXISTS customer_orders_owner ON customer_orders(customer_id);
 CREATE TABLE IF NOT EXISTS account_challenges(id TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(id),kind TEXT NOT NULL,code_hash TEXT NOT NULL,expires INTEGER NOT NULL,created INTEGER NOT NULL,attempts INTEGER NOT NULL,used INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS google_flows(state_hash TEXT PRIMARY KEY,nonce TEXT NOT NULL,verifier TEXT NOT NULL,created INTEGER NOT NULL,session_binding TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS customer_profiles(customer_id TEXT PRIMARY KEY REFERENCES customers(id),country_code TEXT NOT NULL,updated INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS order_countries(order_id TEXT PRIMARY KEY REFERENCES orders(id),country_code TEXT NOT NULL,country_source TEXT NOT NULL,updated INTEGER NOT NULL);

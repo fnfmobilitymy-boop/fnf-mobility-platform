@@ -7,12 +7,14 @@ from fastapi.responses import JSONResponse,RedirectResponse
 from pydantic import BaseModel,Field,ConfigDict
 from .core import now,digest,pw_hash,pw_check
 from .db import queue
+from .countries import COUNTRIES,COUNTRY_CODES
 
 class Credentials(BaseModel):
  model_config=ConfigDict(extra='forbid')
  email:str=Field(max_length=254)
  password:str=Field(min_length=12,max_length=128)
  name:str=Field(default='',max_length=120)
+ country:str=Field(default='',max_length=2)
 class Verification(BaseModel):
  challenge:str=Field(max_length=64)
  code:str=Field(pattern=r'^\d{6}$')
@@ -38,7 +40,9 @@ def install_accounts(app,db,cfg,limit):
    if req.headers.get('origin') and req.headers['origin']!=cfg.public_url:fail(403,'Invalid origin')
    if not hmac.compare_digest(req.headers.get('x-customer-csrf',''),csrf(raw)):fail(403,'Refresh your customer login and try again')
   return dict(r)
- def profile(r,raw):return {'id':r['id'],'email':r['email'],'name':r['name'],'csrf':csrf(raw)}
+ def profile(r,raw):
+  with db.connect() as c:country=c.execute('SELECT country_code FROM customer_profiles WHERE customer_id=?',(r['id'],)).fetchone()
+  return {'id':r['id'],'email':r['email'],'name':r['name'],'csrf':csrf(raw),'country':country[0] if country else ''}
  def signed_in(r):
   token=secrets.token_urlsafe(40)
   with db.transaction() as c:
@@ -73,13 +77,14 @@ def install_accounts(app,db,cfg,limit):
   if error:fail(400,'Invalid or expired code. Request a new code after five failed attempts.')
   with db.connect() as c:return dict(c.execute('SELECT * FROM customers WHERE id=?',(cid,)).fetchone())
  @app.get('/api/account/config')
- def config():return {'email':cfg.test_mode or mail_ready(),'testMode':cfg.test_mode}
+ def config():return {'email':cfg.test_mode or mail_ready(),'testMode':cfg.test_mode,'countries':COUNTRIES}
  @app.get('/api/account/session')
  def session(req:Request):
   r=current(req,False);return profile(r,req.cookies['kenny_customer']) if r else {'customer':None}
  @app.post('/api/account/register')
  def register(data:Credentials,req:Request):
-  throttle(req,'register');address=email(data.email)
+  throttle(req,'register');address=email(data.email);country=data.country.strip().upper()
+  if country and country not in COUNTRY_CODES:fail(422,'Choose a valid country or region')
   if not cfg.test_mode and not mail_ready():fail(503,'Email verification is not configured yet.')
   hashed=pw_hash(data.password)
   with db.transaction() as c:
@@ -90,6 +95,7 @@ def install_accounts(app,db,cfg,limit):
     cid=old['id']
    else:
     cid=secrets.token_hex(16);c.execute('INSERT INTO customers VALUES(?,?,?,?,?,NULL,?)',(cid,address,data.name.strip(),hashed,0,now()))
+   if country:c.execute('INSERT INTO customer_profiles VALUES(?,?,?) ON CONFLICT(customer_id) DO UPDATE SET country_code=excluded.country_code,updated=excluded.updated',(cid,country,now()))
   return challenge(cid,address,'verify')
  @app.post('/api/account/verify')
  def verify(data:Verification,req:Request):throttle(req,'verify');return signed_in(consume(data,'verify'))

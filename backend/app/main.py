@@ -13,6 +13,7 @@ from PIL import Image
 from .core import Settings,DETAILS,PHASES,now,digest,money,split_amount,validate_items,pw_check
 from .db import DB,audit,queue,number
 from .documents import render_pdf
+from .countries import COUNTRY_CODES,order_country,order_overview
 
 class Strict(BaseModel):model_config=ConfigDict(extra='forbid')
 class Item(Strict):id:str;qty:int=Field(strict=True)
@@ -136,6 +137,8 @@ def create_app(settings=None):
    limit(c,'order:'+str(req.client.host),10,3600);num=number(c,'KS-TEST' if cfg.test_mode else 'KS');estimate=sum(p['lineCents'] for p in items)
    c.execute('INSERT INTO orders(id,public_no,created,updated,status,language,name,email,phone,business,requirements,items,estimate,method,idempotency,payload_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(oid,num,now(),now(),'requested',data.language,data.name.strip(),data.email.strip(),data.phone.strip(),data.business.strip(),data.requirements.strip(),json.dumps(items,ensure_ascii=False),estimate,data.method,data.idempotency,payload_hash))
    c.execute('INSERT INTO customer_orders VALUES(?,?,?)',(oid,account['id'],now()))
+   declared=c.execute('SELECT country_code FROM customer_profiles WHERE customer_id=?',(account['id'],)).fetchone()
+   if declared:c.execute('INSERT INTO order_countries VALUES(?,?,?,?)',(oid,declared[0],'registration',now()))
    o=order(c,oid);audit(c,'customer',oid,'order_requested','Request-data processing consent v1 accepted');notify(c,o,'New project request · '+num,'Your project request has been saved. Kenny will review your scope and confirm a quotation before payment.\n\n'+data.requirements)
    from .notifications import queue_owner
    queue_owner(c,oid,'Kenny Studio / '+num+' | '+data.name+' | '+data.email+' | '+data.phone+' | '+data.business+' | '+data.requirements+' | Admin: '+cfg.public_url+'/admin')
@@ -157,16 +160,25 @@ def create_app(settings=None):
   token=secrets.token_urlsafe(40)
   with db.transaction() as c:
    c.execute('DELETE FROM sessions WHERE expires<?',(now(),));c.execute('INSERT INTO sessions VALUES(?,?)',(digest(token),now()+28800))
-  response=JSONResponse({'csrf':cfg.csrf(token),'email':cfg.admin_email});response.set_cookie('kenny_admin',token,httponly=True,secure=cfg.production,samesite='strict',max_age=28800,path='/');return response
+  response=JSONResponse({'csrf':cfg.csrf(token),'email':cfg.admin_email});response.delete_cookie('kenny_admin',path='/');response.set_cookie('kenny_admin',token,httponly=True,secure=cfg.production,samesite='strict',max_age=28800,path='/api/admin');return response
  @app.get('/api/admin/session')
  def get_session(req:Request,actor=Depends(admin)):return {'email':actor,'csrf':cfg.csrf(session(req))}
  @app.post('/api/admin/logout')
  def logout(req:Request,actor=Depends(admin)):
   with db.transaction() as c:c.execute('DELETE FROM sessions WHERE token_hash=?',(digest(session(req)),))
-  response=JSONResponse({'ok':True});response.delete_cookie('kenny_admin',path='/');return response
+  response=JSONResponse({'ok':True});response.delete_cookie('kenny_admin',path='/');response.delete_cookie('kenny_admin',path='/api/admin');return response
+ @app.get('/api/admin/orders/{oid}')
+ def admin_order_detail(oid:str,req:Request,actor=Depends(admin)):
+  result=get_order(oid,req)
+  with db.connect() as c:result.update(order_overview(c,oid))
+  return result
  @app.get('/api/admin/orders')
  def list_orders(actor=Depends(admin)):
-  with db.connect() as c:return {'orders':[dict(r) for r in c.execute('SELECT o.id,o.public_no,o.created,o.updated,o.status,o.name,o.email,o.estimate,o.quote,o.method,(SELECT count(*) FROM receipts r WHERE r.order_id=o.id AND r.status=?) AS pending_receipts FROM orders o ORDER BY o.created DESC LIMIT 500',('pending',))],'mailReady':not cfg.test_mode and all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status!='sent'").fetchone()[0]}
+  with db.connect() as c:
+   rows=[dict(r) for r in c.execute('SELECT o.id,o.public_no,o.created,o.updated,o.status,o.name,o.email,o.estimate,o.quote,o.method,(SELECT count(*) FROM receipts r WHERE r.order_id=o.id AND r.status=?) AS pending_receipts FROM orders o ORDER BY o.created DESC LIMIT 500',('pending',))]
+   for row in rows:row.update(order_overview(c,row['id']))
+   return {'orders':rows,'mailReady':not cfg.test_mode and all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status='queued'").fetchone()[0]}
+
  def issue_quote(c,oid,data,actor):
   if cfg.production and not cfg.test_mode and data.method=='stripe' and not (cfg.stripe_key and cfg.webhook_secret):fail(503,'Configure Stripe API and webhook credentials before issuing a Stripe quotation.')
   total=money(data.amount);amounts=split_amount(total,data.method)
@@ -220,6 +232,8 @@ def create_app(settings=None):
    r=c.execute('SELECT * FROM receipts WHERE id=?',(rid,)).fetchone()
    if not r:fail(404,'Receipt not found')
    access(req,order(c,r['order_id']));return FileResponse(r['path'],media_type=r['mime'],filename=r['name'])
+ @app.get('/api/admin/receipts/{rid}')
+ def admin_receipt_file(rid:str,req:Request,actor=Depends(admin)):return receipt_file(rid,req)
  @app.post('/api/admin/receipts/{rid}/review')
  def review(rid:str,data:Review,actor=Depends(admin)):
   try:
@@ -243,6 +257,8 @@ def create_app(settings=None):
    row=c.execute('SELECT * FROM documents WHERE id=?',(did,)).fetchone()
    if not row:fail(404,'Document not found')
    access(req,order(c,row['order_id']));return Response(row['pdf'],media_type='application/pdf',headers={'Content-Disposition':'attachment; filename="'+row['number']+'.pdf"'})
+ @app.get('/api/admin/documents/{did}')
+ def admin_document(did:str,req:Request,actor=Depends(admin)):return document(did,req)
  @app.post('/api/orders/{oid}/stages/{phase}/checkout')
  async def checkout(oid:str,phase:str,req:Request):
   if cfg.test_mode:fail(403,'Test service: real payments are disabled')
@@ -252,7 +268,7 @@ def create_app(settings=None):
    if not s or s['method']!='stripe' or s['status']!='open':fail(409,'This Stripe payment stage is not open')
    old=c.execute('SELECT * FROM checkout WHERE stage_id=?',(s['id'],)).fetchone()
    if old and old['expires']>now()+60:return {'url':old['url']}
-  payload={'mode':'payment','client_reference_id':oid,'success_url':cfg.public_url+'/order/'+oid+'?checkout=returned','cancel_url':cfg.public_url+'/order/'+oid,'metadata[order_id]':oid,'metadata[stage_id]':s['id'],'customer_email':o['email']}
+  payload={'billing_address_collection':'required','mode':'payment','client_reference_id':oid,'success_url':cfg.public_url+'/order/'+oid+'?checkout=returned','cancel_url':cfg.public_url+'/order/'+oid,'metadata[order_id]':oid,'metadata[stage_id]':s['id'],'customer_email':o['email']}
   for index,(name,cents) in enumerate([('Kenny Studio · '+phase,s['base']),('Stripe service fee · 6%',s['fee'])]):
    payload.update({f'line_items[{index}][price_data][currency]':'myr',f'line_items[{index}][price_data][product_data][name]':name,f'line_items[{index}][price_data][unit_amount]':str(cents),f'line_items[{index}][quantity]':'1'})
   generation=(old['generation']+1) if old else 1
@@ -295,12 +311,10 @@ def create_app(settings=None):
    if bool(obj.get('livemode'))!=cfg.stripe_key.startswith('sk_live_'):fail(409,'Stripe live/test mode mismatch')
    o=order(c,s['order_id'])
    if s['status']=='locked':fail(409,'Stage is not released')
+   country=((obj.get('customer_details') or {}).get('address') or {}).get('country','')
+   if country in COUNTRY_CODES:c.execute('INSERT INTO order_countries VALUES(?,?,?,?) ON CONFLICT(order_id) DO UPDATE SET country_code=excluded.country_code,country_source=excluded.country_source,updated=excluded.updated',(s['order_id'],country,'stripe_billing',now()))
    settle(c,o,dict(s),obj['payment_intent'],'stripe-webhook');c.execute('INSERT INTO stripe_events VALUES(?,?,?)',(event['id'],now(),'processed'))
   return {'received':True}
- @app.get('/api/admin/orders/{oid}/link')
- def customer_link(oid:str,actor=Depends(admin)):
-  with db.connect() as c:
-   o=order(c,oid);return {'url':cfg.link(oid,o['access_version'])}
  @app.get('/api/admin/audit/{oid}')
  def audit_log(oid:str,actor=Depends(admin)):
   with db.connect() as c:return {'events':[dict(r) for r in c.execute('SELECT * FROM audit WHERE order_id=? ORDER BY id DESC',(oid,))]}
@@ -321,7 +335,8 @@ def create_app(settings=None):
  def favicon():return FileResponse(Path(__file__).resolve().parents[1]/'static/brand/favicon-v1.ico',media_type='image/x-icon')
  @app.get('/')
  @app.get('/account')
- @app.get('/admin')
  @app.get('/order/{oid}')
  def shell():return FileResponse(Path(__file__).resolve().parents[1]/'static/index.html')
+ @app.get('/admin')
+ def owner_shell():return FileResponse(Path(__file__).resolve().parents[1]/'static/owner.html')
  return app

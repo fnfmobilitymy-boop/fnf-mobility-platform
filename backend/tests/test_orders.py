@@ -50,7 +50,7 @@ class OrdersTest(unittest.TestCase):
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/quote',json=body).status_code,403)
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/quote',json=body,headers=h).status_code,200)
   data=self.get(o);self.assertEqual(sum(s['base'] for s in data['stages']),100001);self.assertEqual([s['status'] for s in data['stages']],['open','locked','locked']);self.assertEqual(len(data['documents']),3)
-  r=self.c.get('/api/documents/'+data['documents'][0]['id']);self.assertTrue(r.content.startswith(b'%PDF'))
+  r=self.c.get('/api/admin/documents/'+data['documents'][0]['id']);self.assertTrue(r.content.startswith(b'%PDF'))
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/quote',json=body,headers=h).status_code,409)
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/release',headers=h,json={'phase':'second','note':'Preview approved by customer'}).status_code,409)
  def test_manual_receipt_real_storage_not_auto_paid(self):
@@ -110,7 +110,7 @@ class OrdersTest(unittest.TestCase):
   self.assertIsNone(data['paymentDetails']);self.assertFalse(data['stripeReady']);self.assertTrue(self.c.get('/api/config').json()['testMode'])
   self.assertEqual(self.c.post('/api/orders/'+o['id']+'/stages/deposit/checkout',headers=o['headers']).status_code,403)
   self.assertEqual(self.send_event(self.event(o)).status_code,403)
-  pdf=self.c.get('/api/documents/'+data['documents'][0]['id']).content;self.assertTrue(pdf.startswith(b'%PDF'))
+  pdf=self.c.get('/api/admin/documents/'+data['documents'][0]['id']).content;self.assertTrue(pdf.startswith(b'%PDF'))
  def test_owner_tools_privacy_plans_notes_and_tasks(self):
   o=self.new();oid=o['id'];base='/api/admin/orders/'+oid
   self.assertEqual(self.c.get('/api/admin/tools',headers=o['headers']).status_code,401)

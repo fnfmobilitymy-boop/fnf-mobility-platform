@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Literal
 from .core import now
 from .db import audit
+from .countries import order_country,order_overview
 
 class ToolInput(BaseModel):model_config=ConfigDict(extra='forbid')
 class ProjectPlan(ToolInput):
@@ -47,7 +48,7 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
    projects=[dict(r) for r in c.execute("SELECT o.id,o.public_no,o.name,o.status,coalesce(p.delivery,'planning') delivery,coalesce(p.priority,'normal') priority,coalesce(p.due_date,'') due_date FROM orders o LEFT JOIN project_plans p ON p.order_id=o.id ORDER BY CASE coalesce(p.priority,'normal') WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,o.created DESC LIMIT 500")]
    clients=[dict(r) for r in c.execute('SELECT lower(email) email,count(*) orders,coalesce(sum(quote),0) contract_value,max(created) last_order FROM orders GROUP BY lower(email) ORDER BY last_order DESC LIMIT 500')]
    for client in clients:
-    latest=c.execute('SELECT name,phone,business FROM orders WHERE lower(email)=? ORDER BY created DESC LIMIT 1',(client['email'],)).fetchone();client.update(dict(latest))
+    latest=c.execute('SELECT id,name,phone,business FROM orders WHERE lower(email)=? ORDER BY created DESC LIMIT 1',(client['email'],)).fetchone();client.update({k:latest[k] for k in ['name','phone','business']});client.update(order_country(c,latest['id']))
    sales=[dict(r) for r in c.execute('SELECT id,updated,language,turns,brief,recommendation,qualified,custom,order_id FROM sales_sessions ORDER BY updated DESC LIMIT 100')]
    from .notifications import whatsapp_ready
    notification_status={'whatsappReady':whatsapp_ready(),'whatsappQueued':c.execute("SELECT count(*) FROM owner_notifications WHERE status='queued'").fetchone()[0]}
@@ -91,11 +92,12 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
   return {'ok':True}
  @app.get('/api/admin/export/orders.csv')
  def export_csv(actor=Depends(admin)):
-  output=io.StringIO(newline='');writer=csv.writer(output);writer.writerow(['Order','Customer','Email','Phone','Business','Status','Quoted MYR','Settled project value MYR','Outstanding project value MYR','Delivery','Priority','Due date'])
+  output=io.StringIO(newline='');writer=csv.writer(output);writer.writerow(['Order','Customer','Email','Phone','Business','Status','Quoted MYR','Settled project value MYR','Outstanding project value MYR','Delivery','Priority','Due date','Country','Country source','Payment status'])
   with db.connect() as c:
    for o in c.execute("SELECT o.*,coalesce(p.delivery,'planning') delivery,coalesce(p.priority,'normal') priority,coalesce(p.due_date,'') due_date FROM orders o LEFT JOIN project_plans p ON p.order_id=o.id ORDER BY o.created DESC"):
     settled=c.execute("SELECT coalesce(sum(base),0) FROM stages WHERE order_id=? AND status='paid'",(o['id'],)).fetchone()[0]
-    writer.writerow([csv_cell(v) for v in [o['public_no'],o['name'],o['email'],o['phone'],o['business'],o['status'],f"{o['quote']/100:.2f}" if o['quote'] is not None else '',f'{settled/100:.2f}',f"{(o['quote']-settled)/100:.2f}" if o['quote'] is not None else '',o['delivery'],o['priority'],o['due_date']]])
+    overview=order_overview(c,o['id'])
+    writer.writerow([csv_cell(v) for v in [o['public_no'],o['name'],o['email'],o['phone'],o['business'],o['status'],f"{o['quote']/100:.2f}" if o['quote'] is not None else '',f'{settled/100:.2f}',f"{(o['quote']-settled)/100:.2f}" if o['quote'] is not None else '',o['delivery'],o['priority'],o['due_date'],overview['country_code'],overview['country_source'],overview['payment_status']]])
   return Response(('\ufeff'+output.getvalue()).encode(),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="kenny-orders.csv"'})
  @app.get('/api/admin/export/files.zip')
  def export_files(actor=Depends(admin)):
@@ -104,7 +106,7 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
   try:
    with db.connect() as c,zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED) as archive:
     c.execute('BEGIN');records={}
-    for table in ['orders','stages','receipts','documents','project_plans','project_notes','project_tasks','sales_sessions','sales_messages','owner_notifications','audit']:
+    for table in ['orders','stages','receipts','documents','project_plans','project_notes','project_tasks','sales_sessions','sales_messages','owner_notifications','order_countries','audit']:
      records[table]=[{k:v for k,v in dict(r).items() if k not in ['pdf','path','idempotency','payload_hash']} for r in c.execute('SELECT * FROM '+table)]
     for r in c.execute('SELECT id,path FROM receipts'):
      receipt=Path(r['path'])
