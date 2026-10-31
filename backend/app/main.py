@@ -29,6 +29,8 @@ def create_app(settings=None):
  @asynccontextmanager
  async def lifespan(app):
   print('Kenny readiness: testMode='+str(cfg.test_mode)+' persistent='+str(cfg.persistent_storage)+' aiKeyConfigured='+str(bool(os.environ.get('OPENAI_API_KEY')))+' aiEnabled='+str(os.environ.get('AI_SALES_ENABLED','false').lower()=='true')+' standardSales='+str(os.environ.get('AI_STANDARD_SALES_ENABLED','false').lower()=='true'),flush=True)
+  from .sales import verify_provider
+  await verify_provider(cfg)
   from .mail import deliver_loop
   task=None if cfg.test_mode else asyncio.create_task(deliver_loop(db))
   try:yield
