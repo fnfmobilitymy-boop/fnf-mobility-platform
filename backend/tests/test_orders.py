@@ -101,6 +101,42 @@ class OrdersTest(unittest.TestCase):
   self.assertEqual(self.c.post('/api/orders/'+o['id']+'/stages/deposit/checkout',headers=o['headers']).status_code,403)
   self.assertEqual(self.send_event(self.event(o)).status_code,403)
   pdf=self.c.get('/api/documents/'+data['documents'][0]['id']).content;self.assertTrue(pdf.startswith(b'%PDF'))
+ def test_owner_tools_privacy_plans_notes_and_tasks(self):
+  o=self.new();oid=o['id'];base='/api/admin/orders/'+oid
+  self.assertEqual(self.c.get('/api/admin/tools',headers=o['headers']).status_code,401)
+  self.assertEqual(self.c.get(base+'/workspace',headers=o['headers']).status_code,401)
+  self.assertEqual(self.c.get('/api/admin/export/orders.csv').status_code,401)
+  self.assertEqual(self.c.get('/api/admin/export/files.zip').status_code,401)
+  h=self.owner();plan={'version':0,'delivery':'building','priority':'urgent','due_date':'2026-12-31'}
+  self.assertEqual(self.c.post(base+'/plan',json=plan).status_code,403)
+  self.assertEqual(self.c.post(base+'/plan',json={**plan,'due_date':'2026-02-30'},headers=h).status_code,422)
+  self.assertEqual(self.c.post(base+'/plan',json=plan,headers=h).status_code,200)
+  self.assertEqual(self.c.post(base+'/plan',json=plan,headers=h).status_code,409)
+  self.assertEqual(self.c.post(base+'/notes',json={'body':'Private supplier margin: do not share'},headers=h).status_code,200)
+  r=self.c.post('/api/admin/tasks',json={'order_id':oid,'title':'Prepare first preview','due_date':'2020-01-01'},headers=h);self.assertEqual(r.status_code,200,r.text);tid=r.json()['id']
+  ws=self.c.get(base+'/workspace').json();self.assertEqual(ws['plan']['priority'],'urgent');self.assertEqual(len(ws['notes']),1)
+  self.assertEqual(self.get(o)['status'],'requested');self.assertNotIn('Private supplier',self.c.get('/api/orders/'+oid,headers=o['headers']).text)
+  metrics=self.c.get('/api/admin/tools').json();self.assertEqual(metrics['counts']['overdue_tasks'],1)
+  r=self.c.post('/api/admin/tasks/'+str(tid)+'/status',json={'version':1,'done':True},headers=h);self.assertEqual(r.status_code,200)
+  self.assertEqual(self.c.post('/api/admin/tasks/'+str(tid)+'/status',json={'version':1,'done':False},headers=h).status_code,409)
+  self.assertEqual(self.c.get('/api/admin/tools').json()['counts']['open_tasks'],0)
+  self.assertEqual(self.get(o)['status'],'requested')
+  self.c.cookies.clear();self.assertEqual(self.c.get(base+'/workspace',headers=o['headers']).status_code,401)
+ def test_tools_finance_inbox_csv_and_archive(self):
+  import csv,zipfile
+  o=self.new(extra={'name':'=HYPERLINK("bad")','business':'<script>unsafe</script>'});h=self.quote(o)
+  overview=self.c.get('/api/admin/tools').json();self.assertEqual(overview['finance']['contract_value'],100001);self.assertEqual(overview['finance']['settled_project_value'],0)
+  self.assertEqual(overview['finance']['outstanding_project_value'],100001)
+  buf=BytesIO();Image.new('RGB',(32,32),'purple').save(buf,format='PNG')
+  r=self.c.post('/api/orders/'+o['id']+'/stages/deposit/receipt',headers=o['headers'],data={'reference':'QA-TRANSFER'},files={'file':('proof.png',buf.getvalue(),'image/png')});self.assertEqual(r.status_code,200);rid=r.json()['id']
+  overview=self.c.get('/api/admin/tools').json();self.assertEqual(overview['counts']['pending_receipts'],1);self.assertEqual(overview['receipts'][0]['order_id'],o['id']);self.assertNotIn('path',overview['receipts'][0]);self.assertEqual(overview['finance']['settled_project_value'],0)
+  self.c.post('/api/admin/receipts/'+rid+'/review',headers=h,json={'approve':True,'note':'Confirmed actual funds in account','confirmed_received':True})
+  overview=self.c.get('/api/admin/tools').json();self.assertEqual(overview['finance']['settled_project_value'],50001);self.assertEqual(overview['finance']['outstanding_project_value'],50000);self.assertEqual(overview['counts']['pending_receipts'],0)
+  csv_response=self.c.get('/api/admin/export/orders.csv');rows=list(csv.reader(BytesIO(csv_response.content).read().decode('utf-8-sig').splitlines()));self.assertTrue(rows[1][1].startswith("'="));self.assertEqual(rows[1][7],'500.01')
+  response=self.c.get('/api/admin/export/files.zip');self.assertEqual(response.status_code,200,response.text if response.status_code!=200 else '')
+  with zipfile.ZipFile(BytesIO(response.content)) as z:
+   data=json.loads(z.read('records.json'));self.assertNotIn('sessions',data['records']);self.assertNotIn('outbox',data['records']);self.assertNotIn('path',data['records']['receipts'][0]);self.assertNotIn('payload_hash',data['records']['orders'][0]);self.assertEqual(z.read('receipts/'+rid),buf.getvalue());self.assertEqual(len([n for n in z.namelist() if n.endswith('.pdf')]),4)
+  self.assertEqual(self.c.get('/api/admin/orders/'+o['id']+'/workspace').json()['plan']['version'],0)
  def test_rounding(self):
   for total in range(10000,10100):self.assertEqual(sum(v for v,fee in split_amount(total,'stripe')),total)
 if __name__=='__main__':unittest.main()

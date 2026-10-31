@@ -273,6 +273,8 @@ def create_app(settings=None):
  @app.get('/api/admin/mail')
  def mail_status(actor=Depends(admin)):
   with db.connect() as c:return {'messages':[dict(r) for r in c.execute('SELECT id,created,recipient,subject,status,attempts,error FROM outbox ORDER BY id DESC LIMIT 100')]}
+ from .admin_tools import install_admin_tools
+ install_admin_tools(app,db,cfg,admin,order,fail)
  app.mount('/static',StaticFiles(directory=Path(__file__).resolve().parents[1]/'static'),name='static')
  @app.get('/')
  @app.get('/admin')

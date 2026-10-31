@@ -94,3 +94,22 @@ Quotes/invoices are immutable after approval in this first version. Correct a re
 Testing owner login: https://kenny-studio-orders-test.onrender.com/admin . Email is `hello@kennystudio.cfd`. The generated password is stored only in the test service Render Environment as `ADMIN_PASSWORD`; inspect or replace it there. Never copy it into Git or public chat.
 
 Local browser verification completed at 1440px and 390px: EN/ZH/MS request forms, real local order persistence, owner login/quotation, three dummy receipt uploads and approvals, sequential milestone releases, and six downloadable invoice/receipt PDFs. These tests use a separate temporary local database and never charge money. Render reports the isolated test deployment Live and its startup logs show HTTP GET / returning 200; direct external HTTP verification from this execution workspace is blocked by its proxy.
+
+## Owner tools (prepared, deployment pending)
+
+The owner dashboard now includes business overview, a cross-order receipt inbox, searchable clients, project planning (delivery state, priority and target date), private notes, versioned tasks, follow-up message copying and exports. Project planning is owner-only and never marks payments paid or releases stages. Notes are stored separately from customer-visible orders. Plans and tasks reject stale edits from another tab. Existing databases gain the additional tables/indexes using idempotent CREATE IF NOT EXISTS statements.
+
+The overview uses all-time approved MYR project values, excluding Stripe fees. Settled values include only verified paid stages. Outstanding values include locked stages. USDT settlements use the agreed MYR book value of the project, not a fiat bank balance or an assumed current exchange rate. Pending transfers do not increase settled totals.
+
+CSV exports include all orders, UTF-8 BOM and spreadsheet formula neutralization. The business ZIP contains records, uploaded receipts and invoice/receipt PDFs, excludes sessions/credentials/outbox/private-link tokens, and stops if a referenced upload is missing. It is a portable records archive, not an automated server restore. Exports require an authenticated owner session. Temporary files are removed after download.
+
+Front/back order status and tool data are checked every five seconds while visible, retry with backoff on connection failures, and resync when the tab becomes visible. Background repaint retains dirty form values, selected files, focus and scroll. Receipt badges show which order needs review, even while a different order is open.
+
+Additional checks:
+
+```sh
+node backend/tests/live_sync.cjs
+node --check backend/static/admin-tools.js
+```
+
+The current revision passes 13 in-process backend integration tests and deterministic JavaScript sync/render tests (including untrusted client labels). A fresh Chromium end-to-end run was blocked by this environment's socket restrictions; the earlier browser verification above applies to the baseline flow before these additions. Deployment remains pending because the current free Render test instance has ephemeral customer records and files.

@@ -12,3 +12,9 @@ CREATE TABLE IF NOT EXISTS checkout(stage_id TEXT PRIMARY KEY,session_id TEXT UN
 CREATE TABLE IF NOT EXISTS stripe_events(id TEXT PRIMARY KEY,created INTEGER,result TEXT);
 CREATE TABLE IF NOT EXISTS outbox(id INTEGER PRIMARY KEY,created INTEGER,recipient TEXT,subject TEXT,body TEXT,status TEXT DEFAULT 'queued',attempts INTEGER DEFAULT 0,next_attempt INTEGER DEFAULT 0,error TEXT);
 CREATE UNIQUE INDEX IF NOT EXISTS settled_receipt_hash ON receipts(sha) WHERE status='approved';
+CREATE TABLE IF NOT EXISTS project_plans(order_id TEXT PRIMARY KEY REFERENCES orders(id),delivery TEXT NOT NULL DEFAULT 'planning',priority TEXT NOT NULL DEFAULT 'normal',due_date TEXT NOT NULL DEFAULT '',version INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE IF NOT EXISTS project_notes(id INTEGER PRIMARY KEY,order_id TEXT NOT NULL REFERENCES orders(id),created INTEGER NOT NULL,body TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS project_tasks(id INTEGER PRIMARY KEY,order_id TEXT NOT NULL REFERENCES orders(id),title TEXT NOT NULL,due_date TEXT NOT NULL DEFAULT '',done INTEGER NOT NULL DEFAULT 0,created INTEGER NOT NULL,version INTEGER NOT NULL DEFAULT 1);
+CREATE INDEX IF NOT EXISTS project_notes_order ON project_notes(order_id,id);
+CREATE INDEX IF NOT EXISTS project_tasks_order ON project_tasks(order_id,done);
+CREATE INDEX IF NOT EXISTS receipts_pending ON receipts(status,order_id);

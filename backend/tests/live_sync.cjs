@@ -21,5 +21,14 @@ const run=s=>vm.runInContext(s,ctx);
  run("document.activeElement=oldText;let oldForm={id:'',dataset:{upload:'deposit'},elements:[oldText,oldFile]};let saved=saveDrafts({querySelectorAll:()=>[oldForm]})");
  ctx.freshText={value:'',matches(s){return s==='input,textarea,select'},focus(){this.focused=true},setSelectionRange(a,b){this.range=[a,b]}};ctx.freshFile={matches(){return true},replaceWith(file){ctx.retainedFile=file}};
  run("let freshForm={id:'',dataset:{upload:'deposit'},elements:[freshText,freshFile]};restoreDrafts({querySelectorAll:()=>[freshForm]},saved)");assert.equal(ctx.freshText.value,'BANK-123');assert.equal(ctx.freshText.focused,true);assert.deepEqual(ctx.freshText.range,[2,5]);assert.equal(ctx.retainedFile,ctx.oldFile);
+
+ // Render every administrative tool with hostile client labels; no browser fetch is involved.
+ vm.runInContext(readFileSync('backend/static/admin-tools.js','utf8'),ctx);
+ ctx.toolHost={innerHTML:'',querySelectorAll(){return []}};
+ ctx.search={value:'',oninput:null};ctx.results={innerHTML:''};
+ document.querySelector=s=>s==='#admin-detail'?ctx.toolHost:s==='#client-search'?ctx.search:s==='#client-results'?ctx.results:s==='#app'?root:s==='#language'?{}:null;
+ run("let sample={finance:{contract_value:100000,settled_project_value:50000,outstanding_project_value:50000,verified_stripe_fees:0},counts:{pending_receipts:1,open_tasks:1,overdue_tasks:1},today:'2026-10-31',projects:[{id:'one',name:'<script>alert(1)</script>',public_no:'QA-1',delivery:'building',priority:'urgent',due_date:'2026-11-30'}],receipts:[{id:'r1',order_id:'one',name:'<img src=x onerror=alert(1)>',customer:'QA',public_no:'QA-1',phase:'deposit',total:50000,method:'bank',reference:'REF'}],tasks:[{id:1,order_id:'one',title:'<script>bad</script>',customer:'QA',public_no:'QA-1',due_date:'2020-01-01',done:0,version:1}],clients:[{name:'<script>bad</script>',email:'qa@example.invalid',phone:'+60123456789',business:'QA',orders:1,contract_value:100000}]}");
+ for(const tool of ['overview','receipts','tasks','clients','exports']){run(`state.tool='${tool}';renderTool(sample)`);assert(!ctx.toolHost.innerHTML.includes('<script>'));assert(!ctx.results.innerHTML.includes('<script>'));assert(ctx.toolHost.innerHTML.includes('KENNY STUDIO / TOOLS'))}
+ console.log('PASS tools rendering: overview, receipts, tasks, clients, exports and escaped customer content');
  console.log('PASS live sync: automatic updates, pending badges, unchanged DOM, hidden tabs, mutation guard, stale response, reconnect, draft/file/focus preservation');
 })().catch(e=>{console.error(e);process.exitCode=1});
