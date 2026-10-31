@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 dist/
 *.zip
+backend/.env*
+!backend/.env.example
+backend/data/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.upload

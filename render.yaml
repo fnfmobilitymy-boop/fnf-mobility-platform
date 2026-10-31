@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: kenny-studio-orders
+    runtime: docker
+    branch: orders-backend-20261031
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    disk:
+      name: kenny-studio-order-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATA_DIR
+        value: /data
+      - key: APP_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: hello@kennystudio.cfd
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: MAIN_SITE_ORIGIN
+        value: https://kennystudio.cfd

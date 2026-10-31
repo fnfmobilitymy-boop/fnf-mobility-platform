@@ -1,0 +1,14 @@
+PRAGMA journal_mode=WAL;
+CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,public_no TEXT UNIQUE,created INTEGER,updated INTEGER,version INTEGER DEFAULT 1,access_version INTEGER DEFAULT 1,status TEXT,language TEXT,name TEXT,email TEXT,phone TEXT,business TEXT,requirements TEXT,items TEXT,estimate INTEGER,quote INTEGER,scope TEXT,method TEXT,idempotency TEXT UNIQUE,payload_hash TEXT);
+CREATE TABLE IF NOT EXISTS stages(id TEXT PRIMARY KEY,order_id TEXT REFERENCES orders(id),phase TEXT,base INTEGER,fee INTEGER,total INTEGER,method TEXT,status TEXT,released INTEGER,paid INTEGER,reference TEXT,usdt TEXT,UNIQUE(order_id,phase));
+CREATE TABLE IF NOT EXISTS receipts(id TEXT PRIMARY KEY,order_id TEXT REFERENCES orders(id),stage_id TEXT REFERENCES stages(id),created INTEGER,name TEXT,mime TEXT,path TEXT,sha TEXT,reference TEXT,status TEXT,note TEXT);
+CREATE TABLE IF NOT EXISTS documents(id TEXT PRIMARY KEY,order_id TEXT REFERENCES orders(id),stage_id TEXT REFERENCES stages(id),kind TEXT,number TEXT UNIQUE,created INTEGER,pdf BLOB,UNIQUE(stage_id,kind));
+CREATE TABLE IF NOT EXISTS counters(name TEXT PRIMARY KEY,value INTEGER);
+CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY,created INTEGER,actor TEXT,order_id TEXT,action TEXT,detail TEXT);
+CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY,expires INTEGER);
+CREATE TABLE IF NOT EXISTS limits(key TEXT,created INTEGER);
+CREATE INDEX IF NOT EXISTS limits_key ON limits(key,created);
+CREATE TABLE IF NOT EXISTS checkout(stage_id TEXT PRIMARY KEY,session_id TEXT UNIQUE,url TEXT,created INTEGER,expires INTEGER DEFAULT 0,generation INTEGER DEFAULT 1);
+CREATE TABLE IF NOT EXISTS stripe_events(id TEXT PRIMARY KEY,created INTEGER,result TEXT);
+CREATE TABLE IF NOT EXISTS outbox(id INTEGER PRIMARY KEY,created INTEGER,recipient TEXT,subject TEXT,body TEXT,status TEXT DEFAULT 'queued',attempts INTEGER DEFAULT 0,next_attempt INTEGER DEFAULT 0,error TEXT);
+CREATE UNIQUE INDEX IF NOT EXISTS settled_receipt_hash ON receipts(sha) WHERE status='approved';

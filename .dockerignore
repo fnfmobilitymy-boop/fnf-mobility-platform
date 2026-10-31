@@ -1,0 +1,12 @@
+**
+!backend/
+!backend/**
+!source/
+!source/seo/
+!source/seo/pricing.py
+!source/seo/catalogue.py
+!source/seo/payment-details.json
+backend/.env*
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/tests/

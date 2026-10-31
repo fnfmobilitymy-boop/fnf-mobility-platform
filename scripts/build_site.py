@@ -19,6 +19,8 @@ if ORIGIN:
  u=urlparse(ORIGIN)
  if u.scheme!='https' or not u.hostname or u.query or u.fragment or u.username:raise SystemExit('SITE_URL must be a clean HTTPS base URL, optionally with a deployment path.')
 if INDEXABLE and (not ORIGIN or not VERIFIED):raise SystemExit('Indexable build blocked: set SITE_URL and confirm SITE_URL_VERIFIED=true after checking production DNS/hosting.')
+ORDER_BACKEND_URL=os.environ.get('ORDER_BACKEND_URL','').strip().rstrip('/')
+if ORDER_BACKEND_URL and (urlparse(ORDER_BACKEND_URL).scheme!='https' or not urlparse(ORDER_BACKEND_URL).hostname or urlparse(ORDER_BACKEND_URL).path or urlparse(ORDER_BACKEND_URL).query or urlparse(ORDER_BACKEND_URL).fragment or urlparse(ORDER_BACKEND_URL).username):raise SystemExit('ORDER_BACKEND_URL must be the actual HTTPS backend origin, without a path.')
 GSC=os.environ.get('GOOGLE_SITE_VERIFICATION','').strip();GA=os.environ.get('GA4_MEASUREMENT_ID','').strip();GTM=os.environ.get('GTM_CONTAINER_ID','').strip()
 if GSC and not re.fullmatch(r'[A-Za-z0-9_-]{10,300}',GSC):raise SystemExit('Invalid Search Console verification token.')
 if GA and not re.fullmatch(r'G-[A-Z0-9]+',GA):raise SystemExit('Invalid GA4 measurement ID.')
@@ -134,7 +136,7 @@ def head(path,title,desc,prefix,kind=''):
  if data:out+='<script type="application/ld+json">'+j(data)+'</script>'
  out+=favicon+('<link rel="preload" as="font" type="font/woff2" crossorigin href="'+prefix+font_files[0]+'">' if font_files else '')+'<link rel="stylesheet" href="'+prefix+CSS+'"><link rel="stylesheet" href="'+prefix+EXTRA+'">'
  if path=='/':out+='<link rel="preload" as="font" href="'+prefix+'assets/fonts/manrope-variable.ttf" type="font/ttf" crossorigin><link rel="stylesheet" href="./frames/globe/globe.css"><link rel="preload" as="image" href="./media/play-first.webp" fetchpriority="high">'
- out+='<script type="application/json" id="site-options">'+j({'tracking':TRACKING,'ui':UI})+'</script><script defer src="'+prefix+RUNTIME+'"></script>'
+ out+='<script type="application/json" id="site-options">'+j({'tracking':TRACKING,'ui':UI,'orderBackendUrl':ORDER_BACKEND_URL})+'</script><script defer src="'+prefix+RUNTIME+'"></script>'
  if path=='/':out+='<script defer src="./'+APP+'"></script>'
  return out+'</head>'
 def href(prefix,path):return prefix+path.lstrip('/') if path!='/' else prefix or './'
