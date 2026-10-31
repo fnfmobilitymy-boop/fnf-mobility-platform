@@ -313,7 +313,6 @@ def create_app(settings=None):
  app.mount('/static',StaticFiles(directory=Path(__file__).resolve().parents[1]/'static'),name='static')
  @app.get('/')
  @app.get('/account')
- @app.get('/account/google-complete')
  @app.get('/admin')
  @app.get('/order/{oid}')
  def shell():return FileResponse(Path(__file__).resolve().parents[1]/'static/index.html')

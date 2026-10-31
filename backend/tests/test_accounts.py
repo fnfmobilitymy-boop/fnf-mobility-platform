@@ -51,28 +51,8 @@ class AccountTest(fixtures.OrdersTest):
  def test_real_email_delivery_is_never_faked(self):
   self.cfg.test_mode=False
   with patch.dict('os.environ',{'SMTP_HOST':'','GOOGLE_CLIENT_ID':'','GOOGLE_CLIENT_SECRET':''}):
-   self.assertFalse(self.c.get('/api/account/config').json()['email']);self.assertFalse(self.c.get('/api/account/config').json()['google'])
+   self.assertFalse(self.c.get('/api/account/config').json()['email'])
    self.assertEqual(self.c.post('/api/account/register',json={'email':'a@example.invalid','password':'a sufficiently long password'}).status_code,503)
- def google_flow(self,address='google@example.invalid',sub='google-sub',nonce_bad=False):
-  r=self.c.get('/api/account/google/start',follow_redirects=False);self.assertEqual(r.status_code,307,r.text);q=parse_qs(urlparse(r.headers['location']).query)
-  claims={'aud':'test-client','iss':'https://accounts.google.com','exp':now()+3600,'nonce':'bad' if nonce_bad else q['nonce'][0],'sub':sub,'email':address,'email_verified':'true','name':'Google Test'}
-  class Google:
-   async def __aenter__(self):return self
-   async def __aexit__(self,*a):pass
-   async def post(self,url,**kw):return httpx.Response(200,json={'id_token':'verified-via-google'},request=httpx.Request('POST',url))
-   async def get(self,url,**kw):return httpx.Response(200,json=claims,request=httpx.Request('GET',url))
-  with patch('app.accounts.httpx.AsyncClient',lambda **kw:Google()),patch('app.accounts.verify_google_token',return_value=claims):r=self.c.get('/api/account/google/callback',params={'state':q['state'][0],'code':'test-code'},follow_redirects=False)
-  return r,q
- def test_google_state_nonce_no_silent_email_merge_and_explicit_link(self):
-  with patch.dict('os.environ',{'GOOGLE_CLIENT_ID':'test-client','GOOGLE_CLIENT_SECRET':'test-only'}):
-   self.assertEqual(self.c.get('/api/account/google/callback?state=bad&code=bad').status_code,400)
-   r,_=self.google_flow(nonce_bad=True);self.assertEqual(r.status_code,400)
-   r,q=self.google_flow();self.assertEqual(r.status_code,303,r.text)
-   self.assertEqual(self.c.get('/api/account/session').json()['email'],'google@example.invalid')
-   self.assertEqual(self.c.get('/api/account/google/callback',params={'state':q['state'][0],'code':'replay'}).status_code,400)
-   self.c.cookies.clear();data,user=self.verify('existing@example.invalid');self.c.post('/api/account/logout',json={})
-   r,_=self.google_flow('existing@example.invalid','second-sub');self.assertEqual(r.status_code,409)
-   self.c.post('/api/account/login',json=data);r,_=self.google_flow('existing@example.invalid','second-sub');self.assertEqual(r.status_code,303,r.text)
  def test_ai_checkout_cannot_bypass_customer_login(self):
   with patch.dict('os.environ',{'AI_SALES_ENABLED':'true','AI_STANDARD_SALES_ENABLED':'true','OPENAI_API_KEY':'test-only'}),patch('app.sales.generate_reply',new_callable=AsyncMock,return_value=Reply(reply='Ready',reply_language='en',brief='Business landing page with a WhatsApp enquiry link',recommended_plan='essential',qualified=True,needs_custom=False)):
    s=self.c.post('/api/sales/sessions',json={'language':'en','consent':True}).json();h={'Authorization':'Bearer '+s['token']};self.c.post('/api/sales/sessions/'+s['id']+'/message',headers=h,json={'text':'Business landing page RM1000 standard scope','nonce':secrets.token_hex(16)})
