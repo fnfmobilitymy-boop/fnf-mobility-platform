@@ -4,7 +4,7 @@ const priorityLabel=v=>({normal:T('Normal','正常','Biasa'),high:T('High','优�
 const toolLabel=v=>({sales:T('AI sales leads','AI 销售需求','Prospek jualan AI'),overview:T('Business overview','业务总览','Gambaran perniagaan'),receipts:T('Receipt inbox','单据核对中心','Peti resit'),tasks:T('Tasks & deadlines','待办与交期','Tugas & tarikh'),clients:T('Clients','客户资料','Pelanggan'),exports:T('Exports','资料导出','Eksport')}[v]);
 function projectButton(id,label){return `<button class="secondary" type="button" data-open-project="${esc(id)}">${esc(label)} ↗</button>`}
 function mountAdminTools(){
- const nav=document.createElement('nav');nav.className='tools-nav';nav.setAttribute('aria-label',T('Studio tools','工作台工具','Alat studio'));nav.innerHTML=['overview','receipts','tasks','clients','sales','exports'].map(v=>`<button type="button" class="secondary" data-tool="${v}">${toolLabel(v)}</button>`).join('');root.querySelector('.stats').after(nav);const bell=document.createElement('button');bell.type='button';bell.className='secondary';bell.id='order-bell';bell.textContent=orderSound?T('Order sound on · mute','订单提示音已开 · 静音','Bunyi aktif · senyapkan'):T('Enable order sound','开启订单提示音','Aktifkan bunyi pesanan');nav.append(bell);bell.onclick=toggleOrderBell;nav.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>openTool(b.dataset.tool).catch(err));
+ const nav=document.createElement('nav');nav.className='tools-nav';nav.setAttribute('aria-label',T('Studio tools','工作台工具','Alat studio'));nav.innerHTML=['overview','receipts','tasks','clients','sales','exports'].map(v=>`<button type="button" class="secondary" data-tool="${v}">${toolLabel(v)}</button>`).join('');root.querySelector('.stats').after(nav);mountOrderBell();nav.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>openTool(b.dataset.tool).catch(err));
 }
 async function openTool(name){
  const epoch=++state.syncEpoch;state.view='tools';state.activeOrder='';state.tool=name;const data=await api('/admin/tools');if(epoch!==state.syncEpoch)return;renderTool(data);syncStatus();
@@ -38,7 +38,58 @@ async function loadWorkspace(oid,background=false){
  save('#project-plan','/admin/orders/'+oid+'/plan',f=>({...Object.fromEntries(new FormData(f)),version:p.version}));save('#project-note','/admin/orders/'+oid+'/notes',f=>({body:f.elements.body.value}));save('#project-task','/admin/tasks',f=>({...Object.fromEntries(new FormData(f)),order_id:oid}));bindTaskButtons(host,()=>loadWorkspace(oid));
 }
 
-let orderAudio=null,orderSound=false;
-async function toggleOrderBell(){try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)throw Error(T('Audio is unavailable in this browser.','此浏览器不支持提示音。','Audio tidak tersedia dalam pelayar ini.'));orderAudio=orderAudio||new Audio();await orderAudio.resume();orderSound=!orderSound;$('#order-bell').textContent=orderSound?T('Order sound on · mute','订单提示音已开 · 静音','Bunyi aktif · senyapkan'):T('Enable order sound','开启订单提示音','Aktifkan bunyi pesanan');if(orderSound)playOrderBell()}catch(e){err(e)}}
-function playOrderBell(){if(!orderSound||orderAudio?.state!=='running')return;for(const [delay,freq] of [[0,660],[.18,880]]){const tone=orderAudio.createOscillator(),gain=orderAudio.createGain(),t=orderAudio.currentTime+delay;tone.frequency.value=freq;gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.12,t+.02);gain.gain.exponentialRampToValueAtTime(.0001,t+.3);tone.connect(gain);gain.connect(orderAudio.destination);tone.start(t);tone.stop(t+.32)}}
-function notifyNewOrders(before,after){const known=new Set(before.map(o=>o.id));if(after.some(o=>!known.has(o.id))){playOrderBell();toast(T('New customer order received','收到顾客新订单','Pesanan pelanggan baharu diterima'))}}
+// Audio is unlocked only by a user gesture. Never silently discard a new-order alert.
+function readBellJSON(key,fallback){try{const v=JSON.parse(sessionStorage.getItem(key));return Array.isArray(v)?v:fallback}catch{return fallback}}
+function readBellSetting(key,fallback){try{return localStorage.getItem(key)??fallback}catch{return fallback}}
+let orderAudio=null,orderSound=readBellSetting('kenny-order-sound','false')==='true',orderAudioUnlocked=false,orderAudioError='';
+const savedOrderIds=readBellJSON('kenny-order-seen',null),orderSeen=savedOrderIds===null?null:new Set(savedOrderIds);
+let knownOrderIds=orderSeen;
+const pendingOrderIds=new Set(readBellJSON('kenny-order-pending',[]));
+let orderRingBusy=false,orderCheckTime=0;
+function saveBellState(){try{sessionStorage.setItem('kenny-order-seen',JSON.stringify([...knownOrderIds||[]].slice(-1000)));sessionStorage.setItem('kenny-order-pending',JSON.stringify([...pendingOrderIds].slice(-500)));localStorage.setItem('kenny-order-sound',String(orderSound))}catch{}}
+function mountOrderBell(){
+ const controls=document.createElement('section');controls.id='order-alert-controls';controls.className='order-alert-controls';controls.setAttribute('aria-label',T('Order alerts','订单提醒','Makluman pesanan'));
+ controls.innerHTML=`<div class="actions"><button type="button" id="order-bell"></button><button type="button" class="secondary" id="order-bell-test">${T('Test sound','测试铃声','Uji bunyi')}</button><button type="button" class="secondary" id="order-bell-mute">${T('Mute','静音','Senyapkan')}</button></div><p id="order-bell-status" role="status"></p><small>${T('Keep this admin page open. After a reload, click Enable & test to unlock browser audio again. Background browser throttling or device sleep can delay alerts; a closed page cannot ring.','请保持后台页面打开。刷新后需再次点击“启用并测试”解锁浏览器音频；浏览器后台节流或设备休眠可能延迟提醒，关闭页面无法响铃。','Pastikan halaman admin terbuka. Selepas muat semula, klik Aktif & uji untuk membuka audio semula. Pelayar latar atau peranti tidur boleh melambatkan makluman; halaman ditutup tidak boleh berbunyi。')}</small>`;
+ root.querySelector('.admin-title').after(controls);$('#order-bell').onclick=enableOrderBell;$('#order-bell-test').onclick=enableOrderBell;$('#order-bell-mute').onclick=()=>{orderSound=false;orderAudioError='';saveBellState();updateOrderBellControls()};updateOrderBellControls();
+}
+function updateOrderBellControls(){
+ const button=$('#order-bell'),status=$('#order-bell-status'),controls=$('#order-alert-controls');if(!button||!status)return;
+ const ready=orderSound&&orderAudioUnlocked&&orderAudio?.state==='running';button.textContent=ready?T('Sound enabled · test again','提示音已启用 · 再测试','Bunyi aktif · uji lagi'):T('Enable & test order sound','启用并测试订单铃声','Aktif & uji bunyi pesanan');button.setAttribute('aria-pressed',String(ready));
+ if(controls)controls.dataset.audio=ready?'ready':orderSound?'locked':'muted';
+ let text=orderAudioError||(ready?T('Audio is enabled. If you did not hear the test, check the site/tab mute and device volume.','浏览器音频已启用。若没听到测试铃声，请检查网站／标签页静音及设备音量。','Audio aktif. Jika ujian tidak kedengaran, semak senyap tapak/tab dan kelantangan peranti.'):T('Click Enable & test first; the browser blocks automatic sound until you do.','请先点击“启用并测试”，浏览器未授权音频前无法自动响铃。','Klik Aktif & uji dahulu; pelayar menyekat audio automatik sebelum itu.'));
+ if(pendingOrderIds.size)text+=' '+T('New orders waiting for sound: ','待响铃的新订单：','Pesanan baharu menunggu bunyi: ')+pendingOrderIds.size;
+ if(orderCheckTime)text+=' '+T('Last checked ','最近检查 ','Semakan terakhir ')+new Date(orderCheckTime).toLocaleTimeString();status.textContent=text;
+}
+async function resumeOrderAudio(){
+ if(!orderAudio)return false;
+ if(orderAudio.state!=='running'){
+  let timeout;try{await Promise.race([orderAudio.resume(),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('Audio resume timed out')),2000)})])}finally{clearTimeout(timeout)}
+ }
+ return orderAudio.state==='running';
+}
+async function enableOrderBell(){
+ const button=$('#order-bell');if(button)button.disabled=true;orderAudioError='';
+ try{
+  const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)throw Error(T('This browser does not support the order sound.','此浏览器不支持订单提示音。','Pelayar ini tidak menyokong bunyi pesanan.'));
+  if(!orderAudio||orderAudio.state==='closed')orderAudio=new Audio();orderSound=true;saveBellState();
+  if(!await resumeOrderAudio())throw Error('Audio blocked');orderAudioUnlocked=true;
+  if(!playOrderBell())throw Error('Audio playback failed');pendingOrderIds.clear();saveBellState();
+ }catch(e){orderAudioUnlocked=false;orderAudioError=T('Sound could not be enabled. Click again and check browser audio permissions, site mute and device volume.','音频未成功启用。请再次点击，并检查浏览器声音权限、网站静音及设备音量。','Audio gagal diaktifkan. Klik lagi dan semak kebenaran audio, senyap tapak serta kelantangan peranti.');}
+ finally{if(button)button.disabled=false;updateOrderBellControls()}
+}
+function playOrderBell(){
+ if(!orderSound||!orderAudioUnlocked||orderAudio?.state!=='running')return false;
+ try{for(const [delay,freq] of [[0,660],[.19,880],[.38,1046],[.85,660],[1.04,880],[1.23,1046]]){const tone=orderAudio.createOscillator(),gain=orderAudio.createGain(),t=orderAudio.currentTime+delay;tone.frequency.value=freq;gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.18,t+.02);gain.gain.exponentialRampToValueAtTime(.0001,t+.32);tone.connect(gain);gain.connect(orderAudio.destination);tone.start(t);tone.stop(t+.35)}return true}catch{orderAudioUnlocked=false;return false}
+}
+async function ringPendingOrders(){
+ if(orderRingBusy||!pendingOrderIds.size||!orderSound||!orderAudioUnlocked)return;orderRingBusy=true;
+ try{if(await resumeOrderAudio()&&playOrderBell()){pendingOrderIds.clear();saveBellState()}else{orderAudioUnlocked=false;orderAudioError=T('Browser audio is paused. Click Enable & test to restore alerts.','浏览器音频已暂停，请点“启用并测试”恢复提醒。','Audio pelayar dijeda. Klik Aktif & uji untuk pulihkan makluman.')}}catch{orderAudioUnlocked=false;orderAudioError=T('Click Enable & test to restore browser audio.','请点击“启用并测试”恢复浏览器音频。','Klik Aktif & uji untuk pulihkan audio pelayar.')}finally{orderRingBusy=false;updateOrderBellControls()}
+}
+function observeOrderNotifications(orders){
+ orderCheckTime=Date.now();if(knownOrderIds===null){knownOrderIds=new Set(orders.map(o=>o.id));saveBellState();updateOrderBellControls();return}
+ const added=orders.filter(o=>!knownOrderIds.has(o.id));for(const o of added){knownOrderIds.add(o.id);pendingOrderIds.add(o.id)}
+ if(knownOrderIds.size>1000)knownOrderIds=new Set([...knownOrderIds].slice(-1000));if(added.length)saveBellState();
+ if(added.length)toast(T('New customer order received','收到顾客新订单','Pesanan pelanggan baharu diterima'));
+ updateOrderBellControls();void ringPendingOrders();
+}
+function notifyNewOrders(before,after){observeOrderNotifications(after)}

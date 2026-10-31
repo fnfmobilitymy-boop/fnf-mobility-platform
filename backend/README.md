@@ -152,3 +152,12 @@ WHATSAPP_API_VERSION
 These values must be supplied only after the owner enables the relevant WhatsApp service and agrees its billing. No session cookie scraping or unofficial personal-account automation is used. Provider acceptance is labelled `accepted`, not delivered; delivery callbacks are not implemented. Retry after an ambiguous provider timeout can create a duplicate notification, so the UI does not claim exactly-once delivery. Automatic external notifications remain disabled in test mode.
 
 The public price guide has been updated to include one ordinary first-year domain per website package, first-year basic static hosting for showcase sites, explicit renewal/server-hosting charges, and a versioned project policy with proportionate cancellation settlement and mandatory rights preserved. The 50% deposit clause does not claim absolute forfeiture in every circumstance.
+
+
+## Reliable owner order sound
+
+The order alert controls are now prominent above the dashboard statistics. Click Enable & test to unlock actual browser audio; green status is shown only when AudioContext is running. A separate test button and mute action are available. The preference and pending/seen order IDs survive reloads, but a new page still needs the browser's audio gesture. Blocked or suspended audio retains pending alerts instead of silently dropping them. Detection uses an independent ledger, so dashboard rerenders and quotation actions cannot swallow new orders or re-alert on stale snapshots.
+
+Admin order polling also runs while the tab is hidden, without repainting forms, and resynchronises on return. Browsers may throttle background timers or suspend sleeping devices. A closed browser/page cannot ring. Check site/tab mute and device volume if the explicit test is inaudible. A bounded fetch prevents a stalled polling request from permanently blocking subsequent checks.
+
+Checks: `node backend/tests/order_bell.cjs` exercises first-visit baseline, locked-audio queues, tone scheduling, deduplication, suspended audio, reload recovery, mute, and stale snapshots. `node backend/tests/live_sync.cjs` also verifies hidden-tab admin polling and visible resync. Real audibility and OS speaker routing must be checked by the owner using the visible test button.
