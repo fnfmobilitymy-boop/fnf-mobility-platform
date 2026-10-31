@@ -48,10 +48,15 @@ class Settings:
  production:bool=field(default_factory=lambda:os.environ.get('APP_ENV')=='production')
  stripe_key:str=field(default_factory=lambda:os.environ.get('STRIPE_SECRET_KEY',''))
  webhook_secret:str=field(default_factory=lambda:os.environ.get('STRIPE_WEBHOOK_SECRET',''))
+ @property
+ def persistent_storage(self):
+  root=Path(os.environ.get('PERSISTENT_DATA_ROOT','/data')).resolve()
+  return root!=Path('/') and self.data.resolve().is_relative_to(root) and os.path.ismount(root)
  def validate(self):
   if not self.admin_hash and os.environ.get('ADMIN_PASSWORD'):self.admin_hash=pw_hash(os.environ['ADMIN_PASSWORD'])
   if len(self.secret)<32 or not self.admin_hash.startswith('scrypt$'):raise RuntimeError('Configure APP_SECRET (32+ characters) and ADMIN_PASSWORD_HASH; run python -m app.setup')
   if self.production and not self.public_url.startswith('https://'):raise RuntimeError('Production PUBLIC_URL must use HTTPS')
+  if self.production and not self.test_mode and not self.persistent_storage:raise RuntimeError('Live orders require a mounted persistent disk. Mount /data, set DATA_DIR=/data, then deploy before disabling APP_TEST_MODE.')
   self.data.mkdir(parents=True,exist_ok=True);(self.data/'uploads').mkdir(exist_ok=True)
  def token(self,order_id,version=1):return hmac.new(self.secret.encode(),f'order:{order_id}:{version}'.encode(),hashlib.sha256).hexdigest()
  def link(self,order_id,version=1):return self.public_url+'/order/'+order_id+'#token='+self.token(order_id,version)

@@ -90,13 +90,14 @@ def create_app(settings=None):
  @app.get('/api/health')
  def health():return {'status':'ok'}
  @app.get('/api/config')
- def config():return {'testMode':cfg.test_mode,'persistent':not cfg.test_mode}
+ def config():return {'testMode':cfg.test_mode,'persistent':cfg.persistent_storage,'paymentMethods':['bank','tng','usdt']+(['stripe'] if cfg.test_mode or (cfg.stripe_key and cfg.webhook_secret) else [])}
  @app.get('/api/catalogue')
  def get_catalogue(language:Literal['en','zh','ms']='en'):
   from .core import catalogue
   return {'items':catalogue(language),'currency':'MYR','stripeFeePercent':6}
  @app.post('/api/orders',status_code=201)
  def new_order(data:NewOrder,req:Request):
+  if cfg.production and not cfg.test_mode and data.method=='stripe' and not (cfg.stripe_key and cfg.webhook_secret):fail(503,'Stripe is not enabled yet. Please choose a transfer method.')
   if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',data.email):fail(422,'Enter a valid email')
   if not data.name.strip() or not data.requirements.strip():fail(422,'Complete your name and project requirements')
   payload=data.model_dump();items=validate_items(payload['items'],data.language);payload_hash=digest(json.dumps(payload,sort_keys=True));oid=secrets.token_hex(16)
@@ -132,6 +133,7 @@ def create_app(settings=None):
   with db.connect() as c:return {'orders':[dict(r) for r in c.execute('SELECT o.id,o.public_no,o.created,o.updated,o.status,o.name,o.email,o.estimate,o.quote,o.method,(SELECT count(*) FROM receipts r WHERE r.order_id=o.id AND r.status=?) AS pending_receipts FROM orders o ORDER BY o.created DESC LIMIT 500',('pending',))],'mailReady':not cfg.test_mode and all(os.environ.get(k) for k in ['SMTP_HOST','SMTP_USERNAME','SMTP_PASSWORD','SMTP_FROM']),'stripeReady':bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret),'queuedMail':c.execute("SELECT count(*) FROM outbox WHERE status!='sent'").fetchone()[0]}
  @app.post('/api/admin/orders/{oid}/quote')
  def approve_quote(oid:str,data:Quote,actor=Depends(admin)):
+  if cfg.production and not cfg.test_mode and data.method=='stripe' and not (cfg.stripe_key and cfg.webhook_secret):fail(503,'Configure Stripe API and webhook credentials before issuing a Stripe quotation.')
   total=money(data.amount);amounts=split_amount(total,data.method)
   if data.method=='usdt' and (len(data.usdt)!=3 or any(not re.fullmatch(r'\d{1,10}(?:\.\d{1,6})?',v) or float(v)<=0 for v in data.usdt)):fail(422,'Confirm three exact USDT stage amounts (TRC20), not a guessed exchange rate')
   with db.transaction() as c:

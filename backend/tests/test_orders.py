@@ -137,6 +137,20 @@ class OrdersTest(unittest.TestCase):
   with zipfile.ZipFile(BytesIO(response.content)) as z:
    data=json.loads(z.read('records.json'));self.assertNotIn('sessions',data['records']);self.assertNotIn('outbox',data['records']);self.assertNotIn('path',data['records']['receipts'][0]);self.assertNotIn('payload_hash',data['records']['orders'][0]);self.assertEqual(z.read('receipts/'+rid),buf.getvalue());self.assertEqual(len([n for n in z.namelist() if n.endswith('.pdf')]),4)
   self.assertEqual(self.c.get('/api/admin/orders/'+o['id']+'/workspace').json()['plan']['version'],0)
+ def test_live_mode_requires_actual_persistent_mount(self):
+  from unittest.mock import PropertyMock
+  self.cfg.production=True;self.cfg.test_mode=False;self.cfg.public_url='https://orders.example.invalid'
+  self.assertFalse(self.cfg.persistent_storage)
+  with self.assertRaisesRegex(RuntimeError,'mounted persistent disk'):self.cfg.validate()
+  with patch.object(Settings,'persistent_storage',new_callable=PropertyMock,return_value=True):self.cfg.validate()
+  self.cfg.test_mode=True;self.cfg.validate()
+ def test_live_stripe_requires_credentials_and_is_not_offered(self):
+  o=self.new();h=self.owner();self.cfg.production=True;self.cfg.stripe_key='';self.cfg.webhook_secret=''
+  config=self.c.get('/api/config').json();self.assertFalse(config['persistent']);self.assertNotIn('stripe',config['paymentMethods'])
+  payload={**o['payload'],'method':'stripe','idempotency':secrets.token_hex(32)}
+  self.assertEqual(self.c.post('/api/orders',json=payload).status_code,503)
+  self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/quote',headers=h,json={'version':1,'amount':'1000','scope':'Confirmed website scope for customer','method':'stripe'}).status_code,503)
+  self.assertEqual(self.get(o)['status'],'requested')
  def test_rounding(self):
   for total in range(10000,10100):self.assertEqual(sum(v for v,fee in split_amount(total,'stripe')),total)
 if __name__=='__main__':unittest.main()

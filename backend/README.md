@@ -113,3 +113,7 @@ node --check backend/static/admin-tools.js
 ```
 
 The current revision passes 13 in-process backend integration tests and deterministic JavaScript sync/render tests (including untrusted client labels). A fresh Chromium end-to-end run was blocked by this environment's socket restrictions; the earlier browser verification above applies to the baseline flow before these additions. Deployment remains pending because the current free Render test instance has ephemeral customer records and files.
+
+## Production promotion preparation
+
+See `PRODUCTION-LAUNCH.md` for the exact existing-service upgrade and launch sequence. Live mode now requires an actual persistent mount; setting an environment variable alone cannot claim persistence. Stripe is hidden and rejected for new live orders/quotations until both server credentials exist. These promotion guards pass 15 backend integration tests. They are prepared in Git; infrastructure completion and live verification remain required before enabling real orders and publishing the main-site bridge.
