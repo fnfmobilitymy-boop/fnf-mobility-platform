@@ -103,10 +103,13 @@ replace("return y.createElement('section',{id:'coverage'","return kennyElement('
 replace('let touchDevice=matchMedia',"const kennyMotionRoot=r.closest('.kenny-portfolio');let touchDevice=matchMedia")
 replace('if(C=0,document.hidden||e-T>1850)',"if(C=0,document.hidden||kennyMotionRoot?.matches('.is-scrolling,.chapter-interaction-active')||e-T>1850)")
 replace('if(![`mouse`,`pen`,`touch`].includes(e.pointerType)||document.hidden)return;',"if(![`mouse`,`pen`,`touch`].includes(e.pointerType)||document.hidden||kennyMotionRoot?.matches('.is-scrolling,.chapter-interaction-active'))return;")
+component=ROOT/'source/seo/inquiry-component.js'
+if component.exists():
+ start=app.index('function KennyProjectBrief(');end=app.index('\n}',start)+2;app=app[:start]+component.read_text().rstrip()+app[end:]
 APP=asset('portfolio.js',app)
 # Shared static page behaviour and consent loading. Tracking IDs remain empty by default.
 RUNTIME=asset('site.js',(ROOT/'assets/site-runtime.js').read_text()+'\n'+(ROOT/'source/payments/calculation.js').read_text()+'\n'+(ROOT/'source/payments/payment-runtime.js').read_text()+'\n'+(ROOT/'source/payments/cart-runtime.js').read_text()+'\n'+(ROOT/'source/payments/invoice-runtime.js').read_text())
-favicon=re.search(r'<link rel="icon"[^>]*>',legacy)[0]
+favicon='<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/kenny-k-glow-32-v3.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/brand/kenny-k-glow-192-v3.png"><link rel="icon" type="image/x-icon" href="/assets/brand/kenny-k-glow-v3.ico"><link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/kenny-k-glow-180-v3.png">'
 def url(path):return ORIGIN+path if ORIGIN else None
 def graph(path,title,kind):
  if not INDEXABLE:return None
@@ -137,7 +140,7 @@ def head(path,title,desc,prefix,kind=''):
  out+=favicon+('<link rel="preload" as="font" type="font/woff2" crossorigin href="'+prefix+font_files[0]+'">' if font_files else '')+'<link rel="stylesheet" href="'+prefix+CSS+'"><link rel="stylesheet" href="'+prefix+EXTRA+'">'
  if path=='/':out+='<link rel="preload" as="font" href="'+prefix+'assets/fonts/manrope-variable.ttf" type="font/ttf" crossorigin><link rel="stylesheet" href="./frames/globe/globe.css"><link rel="preload" as="image" href="./media/play-first.webp" fetchpriority="high">'
  out+='<script type="application/json" id="site-options">'+j({'tracking':TRACKING,'ui':UI,'orderBackendUrl':ORDER_BACKEND_URL})+'</script><script defer src="'+prefix+RUNTIME+'"></script>'
- if path=='/':out+='<script defer src="./'+APP+'"></script>'
+ if path=='/':out+='<link rel="stylesheet" href="/assets/inquiry-form-v1.css"><script defer src="./'+APP+'"></script>'
  return out+'</head>'
 def href(prefix,path):return prefix+path.lstrip('/') if path!='/' else prefix or './'
 def cta(prefix,kind,lang):

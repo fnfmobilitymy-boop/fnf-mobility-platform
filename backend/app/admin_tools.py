@@ -57,7 +57,7 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
    counts['pending_receipts']=c.execute("SELECT count(*) FROM receipts WHERE status='pending'").fetchone()[0]
    counts['open_tasks']=c.execute('SELECT count(*) FROM project_tasks WHERE done=0').fetchone()[0]
    counts['overdue_tasks']=c.execute("SELECT count(*) FROM project_tasks WHERE done=0 AND due_date!='' AND due_date<?",(local_today(),)).fetchone()[0]
-   return {'revenue':revenue_report(c,now()),'finance':finance,'sales':sales,'notifications':notification_status,'counts':counts,'receipts':receipts,'tasks':tasks,'projects':projects,'clients':clients,'today':local_today(),'testMode':cfg.test_mode,'listLimit':500}
+   return {'inquiries':[dict(r) for r in c.execute('SELECT id,created,name,phone,service,message,business,budget,features,language FROM inquiries ORDER BY created DESC,id DESC LIMIT 500')],'revenue':revenue_report(c,now()),'finance':finance,'sales':sales,'notifications':notification_status,'counts':counts,'receipts':receipts,'tasks':tasks,'projects':projects,'clients':clients,'today':local_today(),'testMode':cfg.test_mode,'listLimit':500}
 
  @app.get('/api/admin/orders/{oid}/workspace')
  def workspace(oid:str,actor=Depends(admin)):
@@ -107,7 +107,7 @@ def install_admin_tools(app,db,cfg,admin,order,fail):
   try:
    with db.connect() as c,zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED) as archive:
     c.execute('BEGIN');records={}
-    for table in ['orders','stages','receipts','documents','project_plans','project_notes','project_tasks','sales_sessions','sales_messages','owner_notifications','order_countries','audit']:
+    for table in ['orders','inquiries','stages','receipts','documents','project_plans','project_notes','project_tasks','sales_sessions','sales_messages','owner_notifications','order_countries','audit']:
      records[table]=[{k:v for k,v in dict(r).items() if k not in ['pdf','path','idempotency','payload_hash']} for r in c.execute('SELECT * FROM '+table)]
     for r in c.execute('SELECT id,path FROM receipts'):
      receipt=Path(r['path'])

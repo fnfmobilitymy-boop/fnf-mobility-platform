@@ -83,6 +83,8 @@ def create_app(settings=None):
   c.execute('INSERT INTO limits VALUES(?,?)',(key,now()))
  from .accounts import install_accounts
  customer_account=install_accounts(app,db,cfg,limit)
+ from .inquiries import install_inquiries
+ install_inquiries(app,db,cfg,admin,fail,limit)
  def emit_document(c,o,s,kind):
   existing=c.execute('SELECT id FROM documents WHERE stage_id=? AND kind=?',(s['id'],kind)).fetchone()
   if existing:return existing[0]

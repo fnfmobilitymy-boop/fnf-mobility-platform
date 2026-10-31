@@ -3,7 +3,7 @@ const {readFileSync}=require('node:fs'),vm=require('node:vm'),assert=require('no
 let now=100000;
 const root={addEventListener(){},querySelectorAll(){return []},querySelector(){return null}};
 const document={hidden:false,querySelector(s){return s==='#app'?root:s==='#language'?{}:null},addEventListener(){}};
-const ctx=vm.createContext({document,localStorage:{getItem(){return null}},sessionStorage:{},setTimeout(){},setInterval(){},window:{addEventListener(){}},Date:{now:()=>now},console,FormData:class{},scrollX:0,scrollY:100,scrollTo(){},fetch(){throw Error('unexpected fetch')}});
+const ctx=vm.createContext({document,localStorage:{getItem(){return null}},sessionStorage:{},setTimeout(){},setInterval(){},window:{addEventListener(){}},Date:class extends Date{static now(){return now}},console,FormData:class{},scrollX:0,scrollY:100,scrollTo(){},fetch(){throw Error('unexpected fetch')}});
 let src=readFileSync('backend/static/app.js','utf8').replace(/^\$\('#language'\)\.onchange=.*$/m,'');vm.runInContext(src,ctx);
 const run=s=>vm.runInContext(s,ctx);
 (async()=>{
@@ -28,7 +28,8 @@ const run=s=>vm.runInContext(s,ctx);
  ctx.search={value:'',oninput:null};ctx.results={innerHTML:''};
  document.querySelector=s=>s==='#admin-detail'?ctx.toolHost:s==='#client-search'?ctx.search:s==='#client-results'?ctx.results:s==='#app'?root:s==='#language'?{}:null;
  run("let sample={finance:{contract_value:100000,settled_project_value:50000,outstanding_project_value:50000,verified_stripe_fees:0},counts:{pending_receipts:1,open_tasks:1,overdue_tasks:1},today:'2026-10-31',projects:[{id:'one',name:'<script>alert(1)</script>',public_no:'QA-1',delivery:'building',priority:'urgent',due_date:'2026-11-30'}],receipts:[{id:'r1',order_id:'one',name:'<img src=x onerror=alert(1)>',customer:'QA',public_no:'QA-1',phase:'deposit',total:50000,method:'bank',reference:'REF'}],tasks:[{id:1,order_id:'one',title:'<script>bad</script>',customer:'QA',public_no:'QA-1',due_date:'2020-01-01',done:0,version:1}],clients:[{name:'<script>bad</script>',email:'qa@example.invalid',phone:'+60123456789',business:'QA',orders:1,contract_value:100000}]}");
- for(const tool of ['overview','receipts','tasks','clients','exports']){run(`state.tool='${tool}';renderTool(sample)`);assert(!ctx.toolHost.innerHTML.includes('<script>'));assert(!ctx.results.innerHTML.includes('<script>'));assert(ctx.toolHost.innerHTML.includes('KENNY STUDIO / TOOLS'))}
+ run("sample.inquiries=[{id:'i',created:1793448000,name:'<script>bad</script>',phone:'+60123456789',service:'business',message:'<img src=x onerror=bad()>',business:'QA',budget:'unsure',features:'[]'}]");
+ for(const tool of ['overview','inquiries','receipts','tasks','clients','exports']){run(`state.tool='${tool}';renderTool(sample)`);assert(!ctx.toolHost.innerHTML.includes('<script>'));assert(!ctx.results.innerHTML.includes('<script>'));assert(ctx.toolHost.innerHTML.includes('KENNY STUDIO / TOOLS'))}
  run("let backgroundAlerts=0;notifyNewOrders=()=>backgroundAlerts++;state.view='admin';state.activeOrder='';state.orders=[];document.hidden=true;api=async()=>({orders:[{id:'background-new',status:'requested'}],queuedMail:0})");const listBefore=run('lists');now+=5000;await run('syncUpdates()');assert.equal(run('backgroundAlerts'),1,'background admin still checks new orders');assert.equal(run('lists'),listBefore,'background polling does not repaint forms');assert.equal(run('state.orders.length'),0,'keep UI baseline for visible resync');run('document.hidden=false');now+=5000;await run('syncUpdates()');assert.equal(run('lists'),listBefore+1);
  console.log('PASS background admin order polling and visible resync');
  console.log('PASS tools rendering: overview, receipts, tasks, clients, exports and escaped customer content');
