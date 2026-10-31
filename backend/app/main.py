@@ -29,6 +29,8 @@ def create_app(settings=None):
  @asynccontextmanager
  async def lifespan(app):
   print('Kenny readiness: testMode='+str(cfg.test_mode)+' persistent='+str(cfg.persistent_storage)+' aiKeyConfigured='+str(bool(os.environ.get('OPENAI_API_KEY')))+' aiEnabled='+str(os.environ.get('AI_SALES_ENABLED','false').lower()=='true')+' standardSales='+str(os.environ.get('AI_STANDARD_SALES_ENABLED','false').lower()=='true'),flush=True)
+  from .stripe_readiness import verify_stripe
+  print('Stripe readiness: '+json.dumps(await verify_stripe(cfg),sort_keys=True),flush=True)
   from .sales import verify_provider
   await verify_provider(cfg)
   from .mail import deliver_loop,verify_smtp
