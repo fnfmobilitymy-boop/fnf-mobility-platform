@@ -106,12 +106,7 @@ replace('if(![`mouse`,`pen`,`touch`].includes(e.pointerType)||document.hidden)re
 component=ROOT/'source/seo/inquiry-component.js'
 if component.exists():
  start=app.index('function KennyProjectBrief(');end=app.index('\n}',start)+2;app=app[:start]+component.read_text().rstrip()+app[end:]
-prism_component=ROOT/'source/seo/prism-sections.js'
-if prism_component.exists():
- import runpy
- app=runpy.run_path(str(ROOT/'scripts/prism_build.py'))['apply_prism'](app,prism_component.read_text())
 APP=asset('portfolio.js',app)
-if prism_component.exists():write('assets/prism-release-v1.json',json.dumps({'app':APP,'theme':'assets/prism-site-v1.css','motion':'assets/prism-motion-v1.js','hero':'assets/prism/chrome-hero-v1.webp','loop':'assets/prism/chrome-hero-loop-v1.mp4','reviews':'assets/prism-client-reviews-v1.json'},indent=2))
 # Shared static page behaviour and consent loading. Tracking IDs remain empty by default.
 RUNTIME=asset('site.js',(ROOT/'assets/site-runtime.js').read_text()+'\n'+(ROOT/'source/payments/calculation.js').read_text()+'\n'+(ROOT/'source/payments/payment-runtime.js').read_text()+'\n'+(ROOT/'source/payments/cart-runtime.js').read_text()+'\n'+(ROOT/'source/payments/invoice-runtime.js').read_text())
 favicon='<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/kenny-k-glow-32-v3.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/brand/kenny-k-glow-192-v3.png"><link rel="icon" type="image/x-icon" href="/assets/brand/kenny-k-glow-v3.ico"><link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/kenny-k-glow-180-v3.png">'
@@ -146,7 +141,7 @@ def head(path,title,desc,prefix,kind=''):
  if path=='/':out+='<link rel="preload" as="font" href="'+prefix+'assets/fonts/manrope-variable.ttf" type="font/ttf" crossorigin><link rel="stylesheet" href="./frames/globe/globe.css"><link rel="preload" as="image" href="./media/play-first.webp" fetchpriority="high">'
  out+='<script type="application/json" id="site-options">'+j({'tracking':TRACKING,'ui':UI,'orderBackendUrl':ORDER_BACKEND_URL})+'</script><script defer src="'+prefix+RUNTIME+'"></script>'
  if path=='/':out+='<link rel="stylesheet" href="/assets/inquiry-form-v1.css"><script defer src="./'+APP+'"></script>'
- return out+'<link rel="stylesheet" href="/assets/prism-site-v1.css"><script defer src="/assets/prism-motion-v1.js"></script></head>'
+ return out+'</head>'
 def href(prefix,path):return prefix+path.lstrip('/') if path!='/' else prefix or './'
 def cta(prefix,kind,lang):
  d=SERVICES[kind]['locales'][lang];return '<a class="service-button" href="'+prefix+'?service='+SERVICES[kind]['form']+'#project-brief">'+E(d['cta'])+' <span aria-hidden="true">↗</span></a>'
