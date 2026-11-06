@@ -36,11 +36,11 @@ class OrdersTest(unittest.TestCase):
  def owner(self):
   r=self.c.post('/api/admin/login',json={'email':self.cfg.admin_email,'password':self.password});self.assertEqual(r.status_code,200,r.text);return {'X-CSRF-Token':r.json()['csrf']}
  def quote(self,o,method='bank'):
-  h=self.owner();r=self.c.post('/api/admin/orders/'+o['id']+'/quote',headers=h,json={'version':1,'amount':'1000.01','scope':'Confirmed 1-page website with up to 6 sections and 2 revisions.','method':method,'usdt':['100','60','40'] if method=='usdt' else []});self.assertEqual(r.status_code,200,r.text);return h
+  h=self.owner();r=self.c.post('/api/admin/orders/'+o['id']+'/quote',headers=h,json={'version':1,'amount':'1000.01','scope':'Confirmed 1-page website with up to 6 sections and 2 revisions.','method':method,'usdt':['100','100'] if method=='usdt' else []});self.assertEqual(r.status_code,200,r.text);return h
  def get(self,o):return self.c.get('/api/orders/'+o['id'],headers=o['headers']).json()
  def test_server_catalogue_and_private_access(self):
-  self.assertEqual(len(self.c.get('/api/catalogue').json()['items']),30)
-  o=self.new(extra={'items':[{'id':'essential','qty':1},{'id':'addon-6','qty':2},{'id':'addon-8','qty':5}]});self.assertEqual(self.get(o)['estimate'],190000)
+  self.assertEqual(len(self.c.get('/api/catalogue').json()['items']),48)
+  o=self.new(extra={'items':[{'id':'essential','qty':1},{'id':'language','qty':2},{'id':'extra-page','qty':5}]});self.assertEqual(self.get(o)['estimate'],259900)
   self.assertEqual(self.c.get('/api/orders/'+o['id']).status_code,404)
   r=self.c.post('/api/orders',json={**o['payload'],'amount':'0.01'});self.assertEqual(r.status_code,422)
   self.assertEqual(self.c.post('/api/orders',json=o['payload']).status_code,409)
@@ -49,21 +49,21 @@ class OrdersTest(unittest.TestCase):
   o=self.new();h=self.owner();body={'version':1,'amount':'1000.01','scope':'A confirmed business website with agreed scope.','method':'bank'}
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/quote',json=body).status_code,403)
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/quote',json=body,headers=h).status_code,200)
-  data=self.get(o);self.assertEqual(sum(s['base'] for s in data['stages']),100001);self.assertEqual([s['status'] for s in data['stages']],['open','locked','locked']);self.assertEqual(len(data['documents']),3)
+  data=self.get(o);self.assertEqual(sum(s['base'] for s in data['stages']),100001);self.assertEqual([s['status'] for s in data['stages']],['open','locked']);self.assertEqual(len(data['documents']),2)
   r=self.c.get('/api/admin/documents/'+data['documents'][0]['id']);self.assertTrue(r.content.startswith(b'%PDF'))
   self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/quote',json=body,headers=h).status_code,409)
-  self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/release',headers=h,json={'phase':'second','note':'Preview approved by customer'}).status_code,409)
+  self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/release',headers=h,json={'phase':'balance','note':'Preview approved by customer'}).status_code,409)
  def test_manual_receipt_real_storage_not_auto_paid(self):
   o=self.new();h=self.quote(o);buf=BytesIO();Image.new('RGB',(32,32),'white').save(buf,format='PNG');png=buf.getvalue();url='/api/orders/'+o['id']+'/stages/deposit/receipt'
   self.assertEqual(self.c.post(url,headers=o['headers'],data={'reference':'BANK-TEST'},files={'file':('bad.png',b'<script>evil</script>','image/png')}).status_code,422)
-  r=self.c.post(url,headers=o['headers'],data={'reference':'BANK-TEST'},files={'file':('proof.png',png,'image/png')});self.assertEqual(r.status_code,200,r.text);rid=r.json()['id'];self.assertEqual(r.json()['status'],'pending');self.assertEqual(self.get(o)['stages'][0]['status'],'open');self.assertEqual(len(self.get(o)['documents']),3)
+  r=self.c.post(url,headers=o['headers'],data={'reference':'BANK-TEST'},files={'file':('proof.png',png,'image/png')});self.assertEqual(r.status_code,200,r.text);rid=r.json()['id'];self.assertEqual(r.json()['status'],'pending');self.assertEqual(self.get(o)['stages'][0]['status'],'open');self.assertEqual(len(self.get(o)['documents']),2)
   self.assertEqual(self.c.get('/api/admin/orders').json()['orders'][0]['pending_receipts'],1)
   review='/api/admin/receipts/'+rid+'/review';self.assertEqual(self.c.post(review,headers=h,json={'approve':True,'note':'Amount and recipient checked','confirmed_received':False}).status_code,422)
   self.assertEqual(self.c.post(review,headers=h,json={'approve':True,'note':'Exact funds confirmed in receiving account','confirmed_received':True}).status_code,200)
   self.assertEqual(self.c.get('/api/admin/orders').json()['orders'][0]['pending_receipts'],0)
-  self.assertEqual(self.get(o)['stages'][0]['status'],'paid');self.assertEqual(len(self.get(o)['documents']),4)
+  self.assertEqual(self.get(o)['stages'][0]['status'],'paid');self.assertEqual(len(self.get(o)['documents']),3)
   self.assertEqual(self.c.post(review,headers=h,json={'approve':True,'note':'Repeated payment attempt','confirmed_received':True}).status_code,409)
-  self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/release',headers=h,json={'phase':'second','note':'Customer accepted the development preview'}).status_code,200)
+  self.assertEqual(self.c.post('/api/admin/orders/'+o['id']+'/release',headers=h,json={'phase':'balance','note':'Customer accepted the development preview'}).status_code,200)
   self.assertEqual(self.get(o)['stages'][1]['status'],'open')
   self.c.cookies.clear();self.assertEqual(self.c.get('/api/receipts/'+rid).status_code,404);self.assertEqual(self.c.get('/api/receipts/'+rid,headers=o['headers']).content,png)
   o2=self.new();self.assertEqual(self.c.get('/api/receipts/'+rid,headers=o2['headers']).status_code,404)
@@ -79,7 +79,7 @@ class OrdersTest(unittest.TestCase):
   self.assertEqual(self.send_event(self.event(o,amount=1)).status_code,409)
   self.assertEqual(self.send_event(self.event(o,currency='usd')).status_code,409)
   self.assertEqual(self.get(o)['stages'][0]['status'],'open')
-  event=self.event(o);self.assertEqual(self.send_event(event).status_code,200);self.assertEqual(self.send_event(event).status_code,200);self.assertEqual(self.get(o)['stages'][0]['status'],'paid');self.assertEqual(len(self.get(o)['documents']),4)
+  event=self.event(o);self.assertEqual(self.send_event(event).status_code,200);self.assertEqual(self.send_event(event).status_code,200);self.assertEqual(self.get(o)['stages'][0]['status'],'paid');self.assertEqual(len(self.get(o)['documents']),3)
  def test_persistence_and_file_auth(self):
   o=self.new();self.quote(o);app2=create_app(self.cfg);other=TestClient(app2);self.assertEqual(other.get('/api/orders/'+o['id'],headers=o['headers']).json()['status'],'quoted');other.close()
   self.assertEqual(self.c.post('/api/admin/login',json={'email':self.cfg.admin_email,'password':'wrong-password'}).status_code,401)
@@ -145,7 +145,7 @@ class OrdersTest(unittest.TestCase):
   csv_response=self.c.get('/api/admin/export/orders.csv');rows=list(csv.reader(BytesIO(csv_response.content).read().decode('utf-8-sig').splitlines()));self.assertTrue(rows[1][1].startswith("'="));self.assertEqual(rows[1][7],'500.01')
   response=self.c.get('/api/admin/export/files.zip');self.assertEqual(response.status_code,200,response.text if response.status_code!=200 else '')
   with zipfile.ZipFile(BytesIO(response.content)) as z:
-   data=json.loads(z.read('records.json'));self.assertNotIn('sessions',data['records']);self.assertNotIn('outbox',data['records']);self.assertNotIn('path',data['records']['receipts'][0]);self.assertNotIn('payload_hash',data['records']['orders'][0]);self.assertEqual(z.read('receipts/'+rid),buf.getvalue());self.assertEqual(len([n for n in z.namelist() if n.endswith('.pdf')]),4)
+   data=json.loads(z.read('records.json'));self.assertNotIn('sessions',data['records']);self.assertNotIn('outbox',data['records']);self.assertNotIn('path',data['records']['receipts'][0]);self.assertNotIn('payload_hash',data['records']['orders'][0]);self.assertEqual(z.read('receipts/'+rid),buf.getvalue());self.assertEqual(len([n for n in z.namelist() if n.endswith('.pdf')]),3)
   self.assertEqual(self.c.get('/api/admin/orders/'+o['id']+'/workspace').json()['plan']['version'],0)
  def test_live_mode_requires_actual_persistent_mount(self):
   from unittest.mock import PropertyMock

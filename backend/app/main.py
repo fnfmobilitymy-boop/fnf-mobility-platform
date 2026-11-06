@@ -10,7 +10,7 @@ from pathlib import Path
 from io import BytesIO
 import asyncio,os,json,secrets,hashlib,hmac,re,sqlite3,httpx
 from PIL import Image
-from .core import Settings,DETAILS,PHASES,now,digest,money,split_amount,validate_items,pw_check
+from .core import Settings,DETAILS,PHASES,NEW_PHASES,now,digest,money,split_amount,validate_items,pw_check
 from .db import DB,audit,queue,number
 from .documents import render_pdf
 from .countries import COUNTRY_CODES,order_country,order_overview
@@ -96,7 +96,7 @@ def create_app(settings=None):
  def settle(c,o,s,reference,actor):
   if s['status']=='paid':return
   c.execute('UPDATE stages SET status=?,paid=?,reference=? WHERE id=?',('paid',now(),reference,s['id']));s={**s,'status':'paid','reference':reference,'paid':now()};emit_document(c,o,s,'receipt');count=c.execute("SELECT count(*) FROM stages WHERE order_id=? AND status='paid'",(o['id'],)).fetchone()[0]
-  c.execute('UPDATE orders SET status=?,updated=?,version=version+1 WHERE id=?',('completed' if count==3 else 'in_progress',now(),o['id']));audit(c,actor,o['id'],'payment_verified',s['phase']+': '+reference);notify(c,o,'Payment verified · '+o['public_no'],s['phase']+' payment was verified. Your receipt is available in your project portal.')
+  c.execute('UPDATE orders SET status=?,updated=?,version=version+1 WHERE id=?',('completed' if count==c.execute('SELECT count(*) FROM stages WHERE order_id=?',(o['id'],)).fetchone()[0] else 'in_progress',now(),o['id']));audit(c,actor,o['id'],'payment_verified',s['phase']+': '+reference);notify(c,o,'Payment verified · '+o['public_no'],s['phase']+' payment was verified. Your receipt is available in your project portal.')
  @app.middleware('http')
  async def guards(req,call_next):
   if req.method=='POST' and req.url.path!='/api/stripe/webhook':
@@ -126,7 +126,7 @@ def create_app(settings=None):
    from pricing import PLANS
    from policy import VERSION
    if os.environ.get('AI_STANDARD_SALES_ENABLED','false').lower()!='true':fail(409,'Standard checkout is not enabled yet')
-   if data.policy_version!=VERSION or len(data.items)!=1 or data.items[0].qty!=1 or data.items[0].id not in [p['id'] for p in PLANS]:fail(422,'Confirm one standard website package and the current project policy')
+   if data.policy_version!=VERSION or len(data.items)!=1 or data.items[0].qty!=1 or data.items[0].id not in [p['id'] for p in PLANS if not p['starting']]:fail(422,'Confirm one standard website package and the current project policy')
    if data.method=='usdt':fail(422,'USDT needs Kenny to agree exact stage amounts. Choose bank/TNG or request a custom quotation.')
   payload=data.model_dump();items=validate_items(payload['items'],data.language);payload_hash=digest(json.dumps(payload,sort_keys=True));oid=secrets.token_hex(16)
   with db.transaction() as c:
@@ -154,7 +154,7 @@ def create_app(settings=None):
  @app.get('/api/orders/{oid}')
  def get_order(oid:str,req:Request):
   with db.connect() as c:
-   o=order(c,oid);access(req,o);o.pop('idempotency');o.pop('payload_hash');o['items']=json.loads(o['items']);o['stages']=[dict(r) for r in c.execute('SELECT * FROM stages WHERE order_id=? ORDER BY rowid',(oid,))];o['receipts']=[dict(r) for r in c.execute('SELECT id,stage_id,created,name,mime,reference,status,note FROM receipts WHERE order_id=? ORDER BY created DESC',(oid,))];o['documents']=[dict(r) for r in c.execute('SELECT id,stage_id,kind,number,created FROM documents WHERE order_id=?',(oid,))];o['paymentDetails']=DETAILS if o['quote'] and not cfg.test_mode else None;o['stripeReady']=bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret);return o
+   o=order(c,oid);access(req,o);o.pop('idempotency');o.pop('payload_hash');o['items']=json.loads(o['items']);o['stages']=[dict(r) for r in c.execute("SELECT * FROM stages WHERE order_id=? ORDER BY CASE phase WHEN 'deposit' THEN 0 WHEN 'second' THEN 1 ELSE 2 END",(oid,))];o['receipts']=[dict(r) for r in c.execute('SELECT id,stage_id,created,name,mime,reference,status,note FROM receipts WHERE order_id=? ORDER BY created DESC',(oid,))];o['documents']=[dict(r) for r in c.execute('SELECT id,stage_id,kind,number,created FROM documents WHERE order_id=?',(oid,))];o['paymentDetails']=DETAILS if o['quote'] and not cfg.test_mode else None;o['stripeReady']=bool(not cfg.test_mode and cfg.stripe_key and cfg.webhook_secret);return o
  @app.post('/api/admin/login')
  def login(data:Login,req:Request):
   with db.transaction() as c:limit(c,'login:'+str(req.client.host),15,900)
@@ -184,13 +184,13 @@ def create_app(settings=None):
  def issue_quote(c,oid,data,actor):
   if cfg.production and not cfg.test_mode and data.method=='stripe' and not (cfg.stripe_key and cfg.webhook_secret):fail(503,'Configure Stripe API and webhook credentials before issuing a Stripe quotation.')
   total=money(data.amount);amounts=split_amount(total,data.method)
-  if data.method=='usdt' and (len(data.usdt)!=3 or any(not re.fullmatch(r'\d{1,10}(?:\.\d{1,6})?',v) or float(v)<=0 for v in data.usdt)):fail(422,'Confirm three exact USDT stage amounts (TRC20), not a guessed exchange rate')
+  if data.method=='usdt' and (len(data.usdt)!=2 or any(not re.fullmatch(r'\d{1,10}(?:\.\d{1,6})?',v) or float(v)<=0 for v in data.usdt)):fail(422,'Confirm two exact USDT stage amounts (TRC20), not a guessed exchange rate')
   o=order(c,oid)
   if o['status']!='requested' or o['version']!=data.version:fail(409,'Order changed or quotation already issued. Refresh before continuing')
   c.execute('UPDATE orders SET quote=?,scope=?,method=?,status=?,updated=?,version=version+1 WHERE id=?',(total,data.scope,data.method,'quoted',now(),oid));o=order(c,oid)
-  for index,(phase,(base,fee)) in enumerate(zip(PHASES,amounts)):
+  for index,(phase,(base,fee)) in enumerate(zip(NEW_PHASES,amounts)):
    sid=secrets.token_hex(16);c.execute('INSERT INTO stages(id,order_id,phase,base,fee,total,method,status,released,usdt) VALUES(?,?,?,?,?,?,?,?,?,?)',(sid,oid,phase,base,fee,base+fee,data.method,'open' if index==0 else 'locked',now() if index==0 else None,data.usdt[index] if data.method=='usdt' else None));s=dict(c.execute('SELECT * FROM stages WHERE id=?',(sid,)).fetchone());emit_document(c,o,s,'invoice')
-  audit(c,actor,oid,'quote_approved',data.scope);notify(c,o,'Quotation ready · '+o['public_no'],'Kenny has confirmed your project scope. Review your three-stage invoices; only the 50% deposit is currently open.\n\nScope:\n'+data.scope)
+  audit(c,actor,oid,'quote_approved',data.scope);notify(c,o,'Quotation ready · '+o['public_no'],'Kenny has confirmed your project scope. Review your two-stage (50% / 50%) invoices; only the 50% deposit is currently open.\n\nScope:\n'+data.scope)
  @app.post('/api/admin/orders/{oid}/quote')
  def approve_quote(oid:str,data:Quote,actor=Depends(admin)):
   with db.transaction() as c:issue_quote(c,oid,data,actor)
@@ -198,7 +198,10 @@ def create_app(settings=None):
  @app.post('/api/admin/orders/{oid}/release')
  def release(oid:str,data:Release,actor=Depends(admin)):
   with db.transaction() as c:
-   o=order(c,oid);prev=PHASES[PHASES.index(data.phase)-1];row=c.execute('SELECT * FROM stages WHERE order_id=? AND phase=?',(oid,prev)).fetchone()
+   o=order(c,oid)
+   phases=[r[0] for r in c.execute("SELECT phase FROM stages WHERE order_id=? ORDER BY CASE phase WHEN 'deposit' THEN 0 WHEN 'second' THEN 1 ELSE 2 END",(oid,))]
+   if data.phase not in phases or phases.index(data.phase)==0:fail(409,'Payment stage not found')
+   prev=phases[phases.index(data.phase)-1];row=c.execute('SELECT * FROM stages WHERE order_id=? AND phase=?',(oid,prev)).fetchone()
    if not row or row['status']!='paid':fail(409,'Verify the previous payment first')
    current=c.execute('SELECT * FROM stages WHERE order_id=? AND phase=?',(oid,data.phase)).fetchone()
    if current['status']!='locked':fail(409,'Stage already released')

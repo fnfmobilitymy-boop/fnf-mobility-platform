@@ -8,9 +8,9 @@ class PaymentFlowTest(fixtures.OrdersTest):
  def linked_order(self):
   data={'items':[{'id':'essential','qty':1}],'name':'PAYMENT ACCEPTANCE','email':'qa@example.invalid','phone':'+60123456789','requirements':'Payment acceptance fixture only; no real payment.','method':'stripe','language':'en','consent':True,'idempotency':secrets.token_hex(32)}
   r=self.c.post('/api/orders',json=data);self.assertEqual(r.status_code,201,r.text);return r.json()
- def test_all_three_stages_owned_order_stripe_fee_and_receipts(self):
+ def test_both_stages_owned_order_stripe_fee_and_receipts(self):
   o=self.linked_order();h=self.owner();r=self.c.post('/api/admin/orders/'+o['id']+'/quote',headers=h,json={'version':1,'amount':'1000.00','scope':'Confirmed test scope for isolated payment acceptance.','method':'stripe'});self.assertEqual(r.status_code,200,r.text)
-  phases=['deposit','second','balance'];charges=[53000,31800,21200];created=[]
+  phases=['deposit','balance'];charges=[53000,53000];created=[]
   class Stripe:
    async def __aenter__(self):return self
    async def __aexit__(self,*a):pass
@@ -37,7 +37,7 @@ class PaymentFlowTest(fixtures.OrdersTest):
    anonymous=fixtures.TestClient(self.app)
    try:self.assertEqual(anonymous.get('/api/documents/'+doc['id']).status_code,401)
    finally:anonymous.close()
-  final=self.c.get('/api/orders/'+o['id']).json();self.assertEqual(final['status'],'completed');self.assertEqual([s['status'] for s in final['stages']],['paid']*3);self.assertEqual(sum(s['fee'] for s in final['stages']),6000);self.assertEqual(len(final['documents']),6)
+  final=self.c.get('/api/orders/'+o['id']).json();self.assertEqual(final['status'],'completed');self.assertEqual([s['status'] for s in final['stages']],['paid']*2);self.assertEqual(sum(s['fee'] for s in final['stages']),6000);self.assertEqual(len(final['documents']),4)
  def test_expired_session_already_paid_prevents_another_checkout(self):
   o=self.linked_order();self.quote(o,'stripe');stage=self.c.get('/api/orders/'+o['id']).json()['stages'][0]
   with self.db.transaction() as c:c.execute('INSERT INTO checkout VALUES(?,?,?,?,?,?)',(stage['id'],'cs_old','https://checkout.stripe.com/old',now()-4000,now()-1,1))

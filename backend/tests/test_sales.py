@@ -30,7 +30,7 @@ class SalesTest(fixtures.OrdersTest):
    other=self.start();self.assertEqual(self.c.get('/api/sales/sessions/'+s['id'],headers=other['headers']).status_code,404)
    self.assertEqual(self.c.get('/api/admin/sales').status_code,401)
    bad=self.checkout(s,amount='1');self.assertEqual(bad.status_code,422)
-   r=self.checkout(s);self.assertEqual(r.status_code,200,r.text);o=r.json();o['headers']={'Authorization':'Bearer '+o['token']};order=self.get(o);self.assertEqual(order['quote'],100000);self.assertEqual(order['status'],'quoted');self.assertEqual([x['base'] for x in order['stages']],[50000,30000,20000]);self.assertEqual([x['status'] for x in order['stages']],['open','locked','locked']);self.assertEqual(len(order['documents']),3);self.assertEqual(self.checkout(s).json()['id'],o['id'])
+   r=self.checkout(s);self.assertEqual(r.status_code,200,r.text);o=r.json();o['headers']={'Authorization':'Bearer '+o['token']};order=self.get(o);self.assertEqual(order['quote'],99900);self.assertEqual(order['status'],'quoted');self.assertEqual([x['base'] for x in order['stages']],[49950,49950]);self.assertEqual([x['status'] for x in order['stages']],['open','locked']);self.assertEqual(len(order['documents']),2);self.assertEqual(self.checkout(s).json()['id'],o['id'])
    self.owner();inbox=self.c.get('/api/admin/tools').json();self.assertEqual(inbox['sales'][0]['brief'],self.answer().brief);self.assertEqual(len(self.c.get('/api/admin/sales/'+s['id']).json()['messages']),2)
    with self.db.connect() as c:self.assertEqual(c.execute('SELECT count(*) FROM owner_notifications').fetchone()[0],1)
  def test_sales_custom_requires_owner_quote_and_provider_failure_is_safe(self):

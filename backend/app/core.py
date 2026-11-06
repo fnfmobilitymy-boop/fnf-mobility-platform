@@ -7,7 +7,8 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'source/seo'))
 from catalogue import catalogue
 DETAILS=json.loads((ROOT/'source/seo/payment-details.json').read_text())
-PHASES=('deposit','second','balance')
+PHASES=('deposit','second','balance') # historical orders
+NEW_PHASES=('deposit','balance')
 def now():return int(time.time())
 def digest(s):return hashlib.sha256(s.encode()).hexdigest()
 def money(raw):
@@ -16,9 +17,9 @@ def money(raw):
  if not 1<=result<=100000000:raise ValueError('Amount must be RM0.01–RM1,000,000')
  return result
 def split_amount(cents,method):
- first=(cents*50+50)//100;second=(cents*30+50)//100
- values=(first,second,cents-first-second)
- if min(values)<1:raise ValueError('Quote too small for three payment stages')
+ first=(cents*50+50)//100
+ values=(first,cents-first)
+ if min(values)<1:raise ValueError('Quote too small for two payment stages')
  return [(v,(v*600+5000)//10000 if method=='stripe' else 0) for v in values]
 def validate_items(items,lang):
  if not isinstance(items,list) or not 1<=len(items)<=30:raise ValueError('Choose 1–30 catalogue items')

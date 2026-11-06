@@ -14,7 +14,8 @@ def render_pdf(order,stage,kind,num,issued):
  title=ParagraphStyle('title',parent=style,fontSize=22,leading=30,textColor=colors.HexColor('#7550d5'))
  p=lambda text:Paragraph(escape(str(text)),style)
  amount=lambda value:'RM'+format(value/100,'.2f')
- labels={'deposit':'50% Deposit / 定金','second':'30% Development / 阶段款','balance':'20% Acceptance balance / 验收尾款'}
+ pct=round(stage['base']*100/order['quote'])
+ labels={'deposit':str(pct)+'% Deposit / 定金','second':str(pct)+'% Development / 阶段款','balance':str(pct)+'% Completion balance / 完成尾款'}
  logo=Path(__file__).resolve().parents[1]/'static/brand/kenny-wordmark-v1.png'
  brand=PDFImage(str(logo),width=190,height=35.4,hAlign='LEFT') if logo.exists() else Paragraph('KENNY STUDIO',title)
  story=[brand,p('hello@kennystudio.cfd · kennystudio.cfd'),Spacer(1,18),Paragraph('Payment receipt / 已付款收据' if kind=='receipt' else 'Invoice / 付款账单',title)]
